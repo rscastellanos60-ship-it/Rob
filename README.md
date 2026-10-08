@@ -15,6 +15,17 @@ No necesita servidor ni compilación: es HTML + JavaScript y el Excel se lee en 
 
 Los gráficos se dibujan con la paleta verde; el botón de paleta del encabezado cambia a los colores originales del Excel. Incluye modo oscuro e impresión/PDF.
 
+## Ortografía
+
+La página corrige al mostrar los errores de los textos del Excel (por ejemplo «Dsitribución» → «Distribución»,
+«Antiguedad» → «Antigüedad», «Régimen», «período(s)», «Vacantes Cubiertas») y muestra las fechas en español
+(«ene-26» en lugar de «Jan-26»). El archivo no se modifica. Las correcciones están en
+`assets/js/correcciones.js` y se pueden agregar más en `data/config.json`:
+
+```json
+"correcciones": { "texto como está en Excel": "texto corregido" }
+```
+
 ## Privacidad
 
 El archivo se lee **solo en el navegador** de quien lo sube; no se envía a ningún servidor.
@@ -45,6 +56,7 @@ o publica la página en un repositorio/sitio privado.
 index.html
 assets/css/styles.css     estilos y paleta verde (modo claro y oscuro)
 assets/js/ooxml.js        lee gráficos, cuadros de texto, imágenes y botones del .xlsx/.xlsm
+assets/js/correcciones.js ortografía y meses en español de los textos del Excel
 assets/js/emf.js          dibuja las imágenes EMF (tablas copiadas como imagen) como SVG
 assets/js/analysis.js     detecta tablas e indicadores y resuelve los rangos de los gráficos
 assets/js/vba.js          extrae y analiza las macros (vbaProject.bin)

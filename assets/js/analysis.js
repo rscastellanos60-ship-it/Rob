@@ -20,17 +20,20 @@
   const isTotal = (v) => /^\s*(total|totales|gran total|suma|subtotal)\b/i.test(String(v || ''));
 
   // Excel guarda los formatos con separadores en inglés; se muestran como en Colombia (1.234,5)
+  const fixText = (s) => (global.Correcciones ? global.Correcciones.fix(s) : s);
+
   function localize(text, fmt) {
     if (typeof text !== 'string') return text;
-    if (fmt && /[dmyhs]/i.test(String(fmt).replace(/"[^"]*"|\[[^\]]*\]|\\./g, ''))) return text;
+    // fechas: solo traducir los meses ("Jan-26" -> "ene-26")
+    if (fmt && /[dmyhs]/i.test(String(fmt).replace(/"[^"]*"|\[[^\]]*\]|\\./g, ''))) return global.Correcciones ? global.Correcciones.spanishMonths(text, true) : text;
     return text.replace(/(\d),(?=\d{3})/g, '$1\u0001').replace(/(\d)\.(\d)/g, '$1,$2').replace(/\u0001/g, '.');
   }
 
   function cellText(c) {
     if (!c) return '';
-    if (c.w != null) return c.t === 'n' ? localize(String(c.w), c.z) : String(c.w);
+    if (c.w != null) return c.t === 'n' || c.t === 'd' ? localize(String(c.w), c.z || (c.t === 'd' ? 'd' : null)) : fixText(String(c.w));
     if (c.v instanceof Date) return c.v.toLocaleDateString('es-CO');
-    return c.v == null ? '' : String(c.v);
+    return c.v == null ? '' : fixText(String(c.v));
   }
   function isNum(c) {
     return !!c && c.t === 'n' && typeof c.v === 'number' && isFinite(c.v);
@@ -255,7 +258,7 @@
         for (let r = b.r1; r <= b.r2; r++)
           for (let c = b.c1; c <= b.c2; c++) {
             const cell = at(g, r, c);
-            if (cell && typeof cell.v === 'string' && cell.v.trim().length > 2) texts.push({ text: cell.v.trim(), r, c });
+            if (cell && typeof cell.v === 'string' && cell.v.trim().length > 2) texts.push({ text: fixText(cell.v.trim()), r, c });
           }
       }
     }
@@ -367,7 +370,7 @@
         values: ref.cache.map((x) => {
           if (x == null) return '';
           if (fmt && ref.numeric && !isNaN(+x)) return formatNumber(+x, fmt);
-          return String(x);
+          return fixText(String(x));
         }),
         fmt,
       };
@@ -383,11 +386,14 @@
 
   function seriesName(name, wb, fallback) {
     if (!name) return fallback;
-    if (name.text) return name.text;
+    if (name.text) return fixText(name.text);
     if (name.f) {
       const cells = resolveRef(name.f, wb);
-      const t = cells && cells.map((c) => c.w || c.v).filter(Boolean).join(' ');
-      if (t) return String(t);
+      const parts = cells ? cells.map((c) => cellText(c)).filter(Boolean) : [];
+      // "7 CENIPALMA": descartar números sueltos de encabezados combinados
+      const words = parts.filter((p) => !/^[\d.,\s]+$/.test(p));
+      const t = (words.length ? words : parts).join(' ');
+      if (t) return fixText(String(t));
     }
     return fallback;
   }
@@ -475,7 +481,7 @@
       for (let c = g.c1; c <= Math.min(g.c2, g.c1 + 40); c++) {
         const cell = at(g, r, c);
         if (!cell) continue;
-        if (!title && typeof cell.v === 'string' && cell.v.trim().length > 6 && !/^\d/.test(cell.v)) title = cell.v.trim();
+        if (!title && typeof cell.v === 'string' && cell.v.trim().length > 6 && !/^\d/.test(cell.v)) title = fixText(cell.v.trim());
         if (!period && (cell.t === 'd' || (isNum(cell) && /[my]/i.test(String(cell.z || '').replace(/"[^"]*"/g, ''))))) period = cellText(cell);
       }
     return { title, period };

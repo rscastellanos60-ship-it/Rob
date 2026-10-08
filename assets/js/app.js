@@ -629,7 +629,7 @@
     const c = XLSX.utils.decode_col(m[3]);
     const merge = (ws['!merges'] || []).find((g) => row >= g.s.r && row <= g.e.r && c >= g.s.c && c <= g.e.c);
     const cell = ws[XLSX.utils.encode_cell(merge ? merge.s : { r: row, c })];
-    return cell && typeof cell.v === 'string' && cell.v.trim() ? cell.v.trim() : null;
+    return cell && typeof cell.v === 'string' && cell.v.trim() ? Correcciones.fix(cell.v.trim()) : null;
   }
 
   function excelChartModel(item, sheetName) {
@@ -651,9 +651,9 @@
         const v = A.seriesValues(s.val, wb, true);
         if (!v.values) continue;
         let cats = A.seriesValues(s.cat, wb, kind === 'scatter' || kind === 'bubble');
-        if (cats.values && cats.values.length > labels.length && kind !== 'scatter' && kind !== 'bubble') labels = cats.values.map((x) => (x == null ? '' : String(x)));
+        if (cats.values && cats.values.length > labels.length && kind !== 'scatter' && kind !== 'bubble') labels = cats.values.map((x) => (x == null ? '' : String(x).trim()));
         const entry = {
-          name: A.seriesName(s.name, wb, headerAbove(s.val && s.val.f) || 'Serie ' + (allSeries.length + 1)),
+          name: A.seriesName(s.name, wb, headerAbove(s.val && s.val.f) || null),
           values: v.values,
           fmt: v.fmt || (s.val && s.val.formatCode) || null,
           color: s.color || accents[allSeries.length % 6] || null,
@@ -707,9 +707,15 @@
       const cells = A.resolveRef(chart.title.f, wb);
       if (cells && cells[0]) title = A.cellText(cells[0]);
     }
-    if (!title && !chart.autoTitleDeleted && allSeries.length === 1) title = allSeries[0].name;
-    if (!title) title = item.name && !/^(chart|gráfico|grafico)\s*\d+$/i.test(item.name) ? item.name : 'Gráfico ' + (allSeries.length === 1 ? '— ' + allSeries[0].name : '');
+    if (!title && !chart.autoTitleDeleted && allSeries.length === 1 && allSeries[0].name) title = allSeries[0].name;
+    if (!title) title = item.name && !/^(chart|gráfico|grafico)\s*\d+$/i.test(item.name) ? item.name : allSeries.length === 1 && allSeries[0].name ? allSeries[0].name : 'Gráfico';
 
+    // series sin nombre en Excel ("Serie1"): nombrarlas por lo que muestran
+    allSeries.forEach((x, i) => {
+      if (x.name) return;
+      const pct = /%/.test(x.fmt || '');
+      x.name = pct ? 'Porcentaje' : allSeries.filter((y) => !y.name).length === 1 || i === 0 ? title : `${title} (${i + 1})`;
+    });
     const g0 = allSeries[0].group;
     const mainKind = allSeries[0].kind;
     const pie = mainKind === 'pie' || mainKind === 'doughnut';
@@ -875,7 +881,7 @@
     if (state.dash && state.dash.split)
       state.dash.parts.forEach((part, i) => {
         const n = part.items.filter((x) => x.type === 'chart').length;
-        sections.push({ id: uid(part.title), kind: 'dashpart', title: part.title, sheet: dash, part, index: i, icon: n ? 'chart' : 'table', group: 'dash', badge: n || null });
+        sections.push({ id: uid(part.title), kind: 'dashpart', title: Correcciones.fix(part.title), sheet: dash, part, index: i, icon: n ? 'chart' : 'table', group: 'dash', badge: n || null });
       });
 
     const ordered = wb.SheetNames.filter((n) => n !== dash).map((n, i) => {
@@ -896,7 +902,7 @@
       sections.push({
         id: uid(o.n),
         kind: 'sheet',
-        title: o.n,
+        title: Correcciones.fix(o.n),
         sheet: o.n,
         icon: o.charts ? 'chart' : 'sheet',
         group: st !== 'visible' ? 'hidden' : isData ? 'data' : 'sheets',
@@ -1694,6 +1700,14 @@
       console.warn('No se pudieron leer los gráficos', e);
       state.parts = null;
     }
+    // ortografía de cuadros de texto y títulos de gráficos
+    if (state.parts)
+      for (const info of Object.values(state.parts.sheets))
+        for (const it of info.items) {
+          if (it.text) it.text = Correcciones.fix(it.text);
+          if (it.chart && it.chart.title && it.chart.title.text) it.chart.title.text = Correcciones.fix(it.chart.title.text);
+          if (it.chart) it.chart.axes.forEach((a) => a.title && (a.title = Correcciones.fix(a.title)));
+        }
     state.sheets = {};
     for (const n of wb.SheetNames) {
       const ws = wb.Sheets[n];
@@ -1777,6 +1791,7 @@
 
   function applyConfig() {
     const c = state.config;
+    if (c.correcciones && typeof c.correcciones === 'object') Correcciones.set(c.correcciones);
     $('#brand-org').textContent = c.organizacion || 'Sector palmero';
     $('#brand-title').textContent = c.titulo || 'Tablero de indicadores';
     document.title = c.titulo || 'Tablero de indicadores';
