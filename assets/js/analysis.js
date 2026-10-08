@@ -143,13 +143,18 @@
     let header = -1;
     for (let r = b.r1; r <= Math.min(b.r2 - 1, b.r1 + 8); r++) {
       const s = rowStats(g, r, b.c1, b.c2);
-      const below = rowStats(g, r + 1, b.c1, b.c2);
+      // la fila siguiente con datos (puede haber una fila vacía o combinada en medio)
+      let below = rowStats(g, r + 1, b.c1, b.c2);
+      for (let k = 2; k <= 3 && !below.filled && r + k <= b.r2; k++) below = rowStats(g, r + k, b.c1, b.c2);
       const yearHeader = (() => {
         let y = 0;
         for (let c = b.c1; c <= b.c2; c++) if (at(g, r, c) && isYear(cellText(at(g, r, c)))) y++;
         return y >= 2 && y >= s.filled - 1;
       })();
-      if (s.filled >= Math.max(2, Math.ceil(width * 0.5)) && (s.str >= s.num || yearHeader) && below.num >= 1) {
+      // las celdas combinadas cuentan como una sola columna
+      let cols = 0;
+      for (let c = b.c1; c <= b.c2; c++) if (!g.merged.has(r + ':' + c)) cols++;
+      if (s.filled >= Math.max(2, Math.ceil(cols * 0.5)) && (s.str >= s.num || yearHeader) && below.num >= 1) {
         header = r;
         break;
       }
@@ -167,7 +172,7 @@
       let name = cellText(at(g, header, c)).trim();
       const above = header > b.r1 ? g.merged.get(header - 1 + ':' + c) || { r: header - 1, c } : null;
       const parent = above ? cellText(at(g, above.r, above.c)).trim() : '';
-      if (parent && parent !== name && rowStats(g, header - 1, b.c1, b.c2).filled < width && !titleParts.includes(parent)) name = name ? parent + ' · ' + name : parent;
+      if (parent && !/^[\d.,\s%]+$/.test(parent) && parent !== name && rowStats(g, header - 1, b.c1, b.c2).filled < width && !titleParts.includes(parent)) name = name ? parent + ' · ' + name : parent;
       columns.push({ index: c, name: name || XLSX.utils.encode_col(c) });
     }
     const rows = [];
@@ -227,7 +232,7 @@
         if (!label) continue;
         const right = at(g, r, c + 1);
         const unit = right && !isNum(right) && cellText(right).length <= 12 ? cellText(right) : '';
-        out.push({ label: label.trim(), value: cell.v, text: cellText(cell), unit, format: cell.z || null, address: XLSX.utils.encode_cell({ r, c }) });
+        out.push({ label: label.trim(), value: cell.v, text: cellText(cell), unit, format: cell.z || null, address: XLSX.utils.encode_cell({ r, c }), r, c, hidden: g.hiddenRows.has(r) || g.hiddenCols.has(c) });
       }
     }
     return out;
@@ -461,7 +466,23 @@
     }).filter(Boolean);
   }
 
+  // Textos y fecha de la cabecera de una hoja (primeras filas)
+  function sheetHeader(a) {
+    const g = a && a.grid;
+    if (!g) return { title: null, period: null };
+    let title = null, period = null;
+    for (let r = g.r1; r <= Math.min(g.r2, g.r1 + 8); r++)
+      for (let c = g.c1; c <= Math.min(g.c2, g.c1 + 40); c++) {
+        const cell = at(g, r, c);
+        if (!cell) continue;
+        if (!title && typeof cell.v === 'string' && cell.v.trim().length > 6 && !/^\d/.test(cell.v)) title = cell.v.trim();
+        if (!period && (cell.t === 'd' || (isNum(cell) && /[my]/i.test(String(cell.z || '').replace(/"[^"]*"/g, ''))))) period = cellText(cell);
+      }
+    return { title, period };
+  }
+
   global.Analysis = {
+    sheetHeader,
     analyzeSheet,
     resolveRef,
     refSheets,

@@ -7,12 +7,20 @@ No necesita servidor ni compilación: es HTML + JavaScript y el Excel se lee en 
 
 | Sección | Contenido |
 |---|---|
-| **Resumen** | Réplica de la hoja *Dashboard* (o la hoja con más gráficos): indicadores clave (celdas y cuadros de texto vinculados), los mismos gráficos de Excel en la misma disposición y los botones con macro convertidos en accesos a las secciones. |
+| **Resumen** | Encabezado de la hoja *Dashboard* (logo, título y fecha de corte), indicadores clave porcentuales y una tarjeta por sección con su gráfico principal. |
+| **Secciones del Dashboard** | La hoja *Dashboard* se divide usando sus rótulos (Estructura, Mapa Social, Rotación General, Selección, Vacaciones, Ausentismo, Teletrabajo, Desarrollo, Seguridad y Salud en el Trabajo…). Cada sección muestra sus gráficos con el mismo tipo y orden que en Excel (incluidos embudos y cascadas), sus indicadores, sus tablas y las tablas pegadas como imagen (EMF). |
 | **Una sección por hoja** | Indicadores con último valor, variación y minigráfico; gráfico configurable (barras, apiladas, líneas, área, dona, transponer, elegir columnas); tabla con búsqueda, orden y descarga CSV. Las hojas a las que llevan las macros y las que alimentan el tablero aparecen primero. |
 | **Macros** | Módulos y procedimientos VBA: qué hacen (navegar, actualizar tablas dinámicas, filtrar, copiar…), qué hojas usan, botones/controles que los ejecutan y el código. |
 | **Archivo y actualización** | Datos del archivo, hojas, nombres definidos e instrucciones. |
 
 Los gráficos se dibujan con la paleta verde; el botón de paleta del encabezado cambia a los colores originales del Excel. Incluye modo oscuro e impresión/PDF.
+
+## Privacidad
+
+El archivo se lee **solo en el navegador** de quien lo sube; no se envía a ningún servidor.
+Este repositorio es **público**: no copies el Excel a `data/` si contiene datos personales
+(por ejemplo, *BD Maestra* o *BD HC*). En ese caso usa solo el botón **Subir Excel**,
+o publica la página en un repositorio/sitio privado.
 
 ## Cómo actualizar
 
@@ -37,6 +45,7 @@ Los gráficos se dibujan con la paleta verde; el botón de paleta del encabezado
 index.html
 assets/css/styles.css     estilos y paleta verde (modo claro y oscuro)
 assets/js/ooxml.js        lee gráficos, cuadros de texto, imágenes y botones del .xlsx/.xlsm
+assets/js/emf.js          dibuja las imágenes EMF (tablas copiadas como imagen) como SVG
 assets/js/analysis.js     detecta tablas e indicadores y resuelve los rangos de los gráficos
 assets/js/vba.js          extrae y analiza las macros (vbaProject.bin)
 assets/js/app.js          interfaz, secciones y gráficos (Chart.js)

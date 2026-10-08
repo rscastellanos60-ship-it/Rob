@@ -317,7 +317,7 @@
   }
 
   /* ---------- gráficos nuevos de Excel 2016 (cx:chart) ---------- */
-  async function parseChartEx(zip, path) {
+  async function parseChartEx(zip, path, theme) {
     const text = await readText(zip, path);
     if (!text) return null;
     const doc = parseXml(text);
@@ -344,14 +344,23 @@
       const id = val(s, 'dataId');
       const dims = data[id] || {};
       const tx = kid(s, 'tx');
+      const dPt = {};
+      for (const p of kids(s, 'dataPt')) {
+        const c = fillColor(kid(p, 'spPr'), theme);
+        if (c) dPt[+p.getAttribute('idx')] = c;
+      }
+      const vis = first(s, 'visibility');
+      const subtotals = all(s, 'subtotals').flatMap((st) => kids(st, 'idx').map((i) => +i.getAttribute('val')));
       return {
         layout: s.getAttribute('layoutId'),
+        labels: kid(s, 'dataLabels') ? { showVal: !vis || vis.getAttribute('value') !== '0' } : null,
+        subtotals,
         hidden: s.getAttribute('hidden') === '1',
         name: { f: tx && first(tx, 'f') ? first(tx, 'f').textContent : null, text: tx && first(tx, 'v') ? first(tx, 'v').textContent : null },
         cat: dims.cat || null,
         val: dims.val || dims.size || null,
-        color: null,
-        dPt: {},
+        color: fillColor(kid(s, 'spPr'), theme),
+        dPt,
       };
     });
     const titleEl = chartEl && kid(chartEl, 'title');
@@ -397,7 +406,7 @@
         const rel = id && rels[id];
         if (!rel || !rel.target) return;
         const isEx = (chartRef.namespaceURI || '').includes('chartex') || /chartEx/i.test(rel.target);
-        const chart = isEx ? await parseChartEx(zip, rel.target) : await parseChart(zip, rel.target, theme);
+        const chart = isEx ? await parseChartEx(zip, rel.target, theme) : await parseChart(zip, rel.target, theme);
         if (chart) items.push({ type: 'chart', name, pos, chart });
       } else if (el.localName === 'sp') {
         const txt = richText(kid(el, 'txBody'));
@@ -413,6 +422,7 @@
           textlink,
           macro,
           fill: fillColor(kid(el, 'spPr'), theme),
+          geom: (first(kid(el, 'spPr'), 'prstGeom') || { getAttribute: () => null }).getAttribute('prst'),
           group: groupName || null,
         });
       } else if (el.localName === 'pic') {
@@ -422,7 +432,11 @@
         if (!rel || !rel.target || !zip.file(rel.target)) return;
         const ext = rel.target.split('.').pop().toLowerCase();
         const mime = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', bmp: 'image/bmp', webp: 'image/webp' }[ext];
-        if (!mime) return;
+        if (!mime) {
+          // EMF/WMF (tablas pegadas como imagen): el navegador no las dibuja
+          if (/^(emf|wmf)$/.test(ext)) items.push({ type: 'image', name, descr, pos, src: null, unsupported: ext.toUpperCase(), bytes: await zip.file(rel.target).async('uint8array') });
+          return;
+        }
         const b64 = await zip.file(rel.target).async('base64');
         items.push({ type: 'image', name, descr, pos, src: `data:${mime};base64,${b64}`, macro: el.getAttribute('macro') || null });
       }
@@ -509,6 +523,7 @@
         if (!r.target) continue;
         if (r.type === 'drawing') entry.items.push(...(await parseDrawing(zip, r.target, theme)));
         else if (r.type === 'vmlDrawing') entry.items.push(...(await parseVml(zip, r.target)));
+        else if (r.type === 'pivotTable') entry.pivots = (entry.pivots || 0) + 1;
       }
     }
     return { sheets, theme };

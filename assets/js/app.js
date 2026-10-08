@@ -203,7 +203,24 @@
         if (meta.hidden) return;
         const total = ds.data.reduce((s, x) => s + (typeof x === 'number' ? x : 0), 0);
         meta.data.forEach((elm, i) => {
-          const raw = ds.data[i];
+          let raw = ds.data[i];
+          if (Array.isArray(raw)) {
+            const shown = ds._values ? ds._values[i] : raw[1] - raw[0];
+            const p = elm.getProps(['x', 'y', 'base'], true);
+            const text = fmtTick(shown, ds._fmt);
+            const horizontal = chart.options.indexAxis === 'y';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            if (opts.inside && horizontal) {
+              ctx.fillStyle = '#fff';
+              ctx.fillText(text, (p.x + p.base) / 2, p.y);
+            } else {
+              ctx.fillStyle = t.text2;
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(text, p.x, Math.min(p.y, p.base) - 4);
+            }
+            return;
+          }
           if (raw == null || typeof raw !== 'number') return;
           let text;
           if (meta.type === 'pie' || meta.type === 'doughnut') {
@@ -308,6 +325,44 @@
       };
     }
 
+    if (model.type === 'funnel') {
+      const s = series[0] || { values: [] };
+      const vals = s.values.map((v) => (typeof v === 'number' ? v : 0));
+      const max = Math.max(...vals.map(Math.abs), 1);
+      return {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: s.name,
+            data: vals.map((v) => [(max - Math.abs(v)) / 2, (max + Math.abs(v)) / 2]),
+            _values: vals,
+            _fmt: s.fmt,
+            backgroundColor: vals.map((_, i) => (useExcelColors() && s.slices && s.slices[i]) || t.series[0]),
+            borderRadius: 4,
+            borderSkipped: false,
+            categoryPercentage: 0.86,
+            barPercentage: 0.92,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          scales: {
+            x: { display: false, min: 0, max },
+            y: { grid: { display: false }, border: { display: false }, afterFit: fitLabels(labels, t.font), ticks: { color: t.text2, font: { size: 11.5 }, callback: (v, i) => wrapLabel(labels[i], 20) } },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label || ''}: ${fmtValue(vals[ctx.dataIndex], s.fmt)}` } },
+            valueLabels: { enabled: true, inside: true },
+          },
+        },
+        plugins: [valueLabels],
+      };
+    }
+
     if (model.percent) {
       const totals = labels.map((_, i) => series.reduce((s, x) => s + Math.abs(x.values[i] || 0), 0));
       series = series.map((s) => ({ ...s, values: s.values.map((v, i) => (v == null || !totals[i] ? null : v / totals[i])), fmt: '0%' }));
@@ -389,6 +444,10 @@
       catAxis.grid = { color: t.grid };
       catAxis.ticks.callback = (v) => fmtTick(v, model.xFormat);
     }
+    if (model.horizontal) {
+      catAxis.ticks.callback = (v, i) => wrapLabel(labels[i], 20);
+      catAxis.afterFit = fitLabels(labels, t.font);
+    }
     const scales = model.type === 'radar'
       ? { r: { grid: { color: t.grid }, angleLines: { color: t.grid }, pointLabels: { color: t.text2 }, ticks: { display: false } } }
       : model.horizontal
@@ -432,13 +491,41 @@
               },
             },
           },
-          valueLabels: { enabled: !!model.showValues && labels.length <= 16 && datasets.length <= 3 && model.type !== 'waterfall' },
+          valueLabels: { enabled: !!model.showValues && labels.length <= 16 && datasets.length <= 3 && !(model.stacked && datasets.length > 1) },
         },
       },
       plugins: [valueLabels, crosshair],
     };
   }
   const s0 = (series) => series[0] || {};
+
+  // Ancho del eje de categorías según la etiqueta más larga (Chart.js las recorta en gráficos angostos)
+  function fitLabels(labels, font) {
+    return (scale) => {
+      const ctx = scale.ctx;
+      ctx.save();
+      ctx.font = `11.5px ${font}`;
+      let w = 0;
+      labels.forEach((l) => [].concat(wrapLabel(l, 20)).forEach((line) => (w = Math.max(w, ctx.measureText(String(line)).width))));
+      ctx.restore();
+      scale.width = Math.min(w + 14, scale.chart.width * 0.5);
+    };
+  }
+
+  // Etiquetas largas en varias líneas para que el eje no las corte
+  function wrapLabel(text, max) {
+    const words = String(text ?? '').split(/\s+/);
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      if (cur && (cur + ' ' + w).length > max) {
+        lines.push(cur);
+        cur = w;
+      } else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+    return lines.length > 1 ? lines.slice(0, 3) : lines[0] || '';
+  }
 
   let chartSeq = 0;
   function mountChart(container, model, height) {
@@ -531,6 +618,20 @@
     surfaceChart: 'line', surface3DChart: 'line',
   };
 
+  // Nombre de serie ausente en Excel ("Serie1"): usar el encabezado sobre el rango de valores
+  function headerAbove(f) {
+    if (!f) return null;
+    const m = String(f).match(/^(?:'((?:[^']|'')+)'|([^!]+))!\$?([A-Z]+)\$?(\d+)/);
+    if (!m) return null;
+    const ws = state.wb.Sheets[m[1] ? m[1].replace(/''/g, "'") : m[2]];
+    const row = +m[4] - 2;
+    if (!ws || row < 0) return null;
+    const c = XLSX.utils.decode_col(m[3]);
+    const merge = (ws['!merges'] || []).find((g) => row >= g.s.r && row <= g.e.r && c >= g.s.c && c <= g.e.c);
+    const cell = ws[XLSX.utils.encode_cell(merge ? merge.s : { r: row, c })];
+    return cell && typeof cell.v === 'string' && cell.v.trim() ? cell.v.trim() : null;
+  }
+
   function excelChartModel(item, sheetName) {
     const chart = item.chart;
     const wb = state.wb;
@@ -542,7 +643,7 @@
     let xFormat = null;
     for (const g of chart.groups) {
       let kind = TYPE_MAP[g.type] || 'bar';
-      if (g.type === 'chartEx') kind = chart.layout === 'waterfall' ? 'waterfall' : 'bar';
+      if (g.type === 'chartEx') kind = chart.layout === 'waterfall' ? 'waterfall' : chart.layout === 'funnel' ? 'funnel' : 'bar';
       const valAxis = chart.axes.filter((a) => g.axIds.includes(a.id) && a.kind === 'valAx');
       const yAxis = valAxis.find((a) => a.pos === 'l' || a.pos === 'r') || valAxis[valAxis.length - 1] || null;
       for (const s of g.series.slice().sort((a, b) => a.order - b.order)) {
@@ -552,7 +653,7 @@
         let cats = A.seriesValues(s.cat, wb, kind === 'scatter' || kind === 'bubble');
         if (cats.values && cats.values.length > labels.length && kind !== 'scatter' && kind !== 'bubble') labels = cats.values.map((x) => (x == null ? '' : String(x)));
         const entry = {
-          name: A.seriesName(s.name, wb, 'Serie ' + (allSeries.length + 1)),
+          name: A.seriesName(s.name, wb, headerAbove(s.val && s.val.f) || 'Serie ' + (allSeries.length + 1)),
           values: v.values,
           fmt: v.fmt || (s.val && s.val.formatCode) || null,
           color: s.color || accents[allSeries.length % 6] || null,
@@ -577,7 +678,14 @@
         if (kind === 'waterfall') {
           let acc = 0;
           const bars = [], kinds = [];
-          v.values.forEach((d) => {
+          const totals = new Set(s.subtotals || []);
+          v.values.forEach((d, i) => {
+            if (totals.has(i)) {
+              acc = d || 0;
+              bars.push([0, acc]);
+              kinds.push('total');
+              return;
+            }
             const start = acc;
             acc += d || 0;
             bars.push([start, acc]);
@@ -588,6 +696,9 @@
         allSeries.push(entry);
       }
     }
+    // series sin ningún valor (columnas vacías en Excel) no aportan y ensucian la leyenda
+    for (let i = allSeries.length - 1; i >= 0 && allSeries.length > 1; i--)
+      if (allSeries[i].values.every((v) => v == null || v === 0)) allSeries.splice(i, 1);
     if (!allSeries.length) return null;
     if (!labels.length) labels = allSeries[0].values.map((_, i) => String(i + 1));
 
@@ -684,6 +795,59 @@
     return meta && meta.Hidden ? (meta.Hidden === 2 ? 'veryHidden' : 'hidden') : 'visible';
   }
 
+  const DATA_RE = /^(bd|base|datos|data|param|maestr|temp|calc|aux)|\bbd\b|tabla(s)? din/i;
+  const FALLBACK_RE = /no est[aá] disponible en su versi[oó]n|not available in your version|isn't available in your version/i;
+  const sheetItems = (n) => (n && state.parts && state.parts.sheets[n] ? state.parts.sheets[n].items : []);
+
+  // Divide la hoja Dashboard en partes usando sus rótulos (formas con títulos cortos)
+  function dashboardModel(sheet) {
+    const items = sheetItems(sheet).filter((i) => !(i.type === 'shape' && FALLBACK_RE.test(i.text || '')));
+    const a = state.sheets[sheet] || { tables: [], kpis: [] };
+    const span = (i) => ({ w: i.pos.to.col - i.pos.from.col, h: i.pos.to.row - i.pos.from.row });
+    const images = items.filter((i) => i.type === 'image' && !i.macro);
+    const logo = images.filter((i) => i.pos.from.row <= 3).sort((x, y) => x.pos.from.col - y.pos.from.col)[0] || null;
+    const bigImages = images.filter((i) => i !== logo && span(i).w >= 6 && span(i).h >= 6 && !(i.unsupported && span(i).w * span(i).h < 60));
+    const charts = items.filter((i) => i.type === 'chart');
+    const covers = charts.concat(images);
+    const covered = (r, c) => covers.some((i) => r >= i.pos.from.row && r < i.pos.to.row && c >= i.pos.from.col && c < i.pos.to.col);
+    const kpiInfo = dashboardKpis(sheet, items);
+    const headings = items
+      .filter((i) => i.type === 'shape' && !i.textlink && !i.macro && i.text && i.text.length >= 3 && i.text.length <= 48 && !i.text.includes('\n') && span(i).h <= 4 && !kpiInfo.used.has(i))
+      .sort((x, y) => x.pos.from.row - y.pos.from.row || x.pos.from.col - y.pos.from.col);
+    const texts = items.filter((i) => i.type === 'shape' && !i.macro && !i.textlink && !kpiInfo.used.has(i) && !headings.includes(i) && i.text && i.text.length > 48);
+    const visibleKpi = (k) => k.fromShape || (!k.hidden && !covered(k.r, k.c));
+    // con secciones: solo los indicadores porcentuales destacados; sin secciones: todos los visibles
+    const headline = headings.length >= 3
+      ? kpiInfo.kpis.filter((k) => visibleKpi(k) && (k.fromShape || (k.format && /%/.test(k.format))))
+      : kpiInfo.kpis.filter(visibleKpi).slice(0, 16);
+    const tables = a.tables.filter((t) => !covered(t.bounds.r1, t.bounds.c1) && !covered(t.headerRow, t.bounds.c1));
+    const useParts = headings.length >= 3;
+    const parts = useParts ? headings.map((h) => ({ title: h.text.trim(), heading: h, items: [], tables: [], kpis: [], notes: [] })) : [];
+    const general = { title: 'General', heading: null, items: [], tables: [], kpis: [], notes: [] };
+    const assign = (r, c) => {
+      let best = null;
+      for (const p of parts) {
+        const h = p.heading.pos.from;
+        if (h.row > r + 1 || h.col > c + 3) continue;
+        if (!best || h.row > best.heading.pos.from.row || (h.row === best.heading.pos.from.row && h.col > best.heading.pos.from.col)) best = p;
+      }
+      return best || general;
+    };
+    charts.concat(bigImages, texts).forEach((i) => assign(i.pos.from.row, i.pos.from.col).items.push(i));
+    tables.forEach((t) => assign(t.headerRow, t.bounds.c1).tables.push(t));
+    headline.forEach((k) => (k.r != null ? assign(k.r, k.c) : general).kpis.push(k));
+    // notas de texto sueltas (fuentes, aclaraciones) dentro de cada parte
+    const header0 = A.sheetHeader(a);
+    (a.allTexts || a.texts || [])
+      .filter((x) => x.text.length > 25 && x.text !== header0.title && !covered(x.r, x.c) && !/^etiquetas de/i.test(x.text))
+      .forEach((x) => useParts && assign(x.r, x.c).notes.push(x));
+    parts.forEach((p) => p.items.sort((x, y) => x.pos.from.row - y.pos.from.row || x.pos.from.col - y.pos.from.col));
+    const all = parts.filter((p) => p.items.length || p.tables.length || p.kpis.length);
+    if (general.items.length || general.tables.length || (!useParts && general.kpis.length)) all.unshift(general);
+    const header = A.sheetHeader(a);
+    return { sheet, parts: all, headline, logo, header, buttons: items.filter((i) => (i.type === 'control' && i.control === 'Button') || ((i.type === 'shape' || i.type === 'image') && i.macro)), split: useParts };
+  }
+
   function buildSections() {
     const wb = state.wb;
     const dash = findDashboardSheet();
@@ -695,9 +859,8 @@
         p.navigatesTo.forEach((s) => navTargets.add(s));
       }
     const chartSources = new Set();
-    if (dash && state.parts && state.parts.sheets[dash])
-      for (const it of state.parts.sheets[dash].items)
-        if (it.type === 'chart') for (const g of it.chart.groups) for (const s of g.series) [s.val && s.val.f, s.cat && s.cat.f].forEach((f) => A.refSheets(f).forEach((x) => chartSources.add(x)));
+    for (const it of sheetItems(dash))
+      if (it.type === 'chart') for (const g of it.chart.groups) for (const s of g.series) [s.val && s.val.f, s.cat && s.cat.f].forEach((f) => A.refSheets(f).forEach((x) => x !== dash && chartSources.add(x)));
 
     const sections = [];
     const ids = new Set();
@@ -707,12 +870,17 @@
       ids.add(id);
       return id;
     };
-    sections.push({ id: uid('resumen'), kind: 'dashboard', title: dash ? dash : 'Resumen', sheet: dash, icon: 'dashboard', group: 'main' });
+    state.dash = dash ? dashboardModel(dash) : null;
+    sections.push({ id: uid('resumen'), kind: 'dashboard', title: 'Resumen', sheet: dash, icon: 'dashboard', group: 'main' });
+    if (state.dash && state.dash.split)
+      state.dash.parts.forEach((part, i) => {
+        const n = part.items.filter((x) => x.type === 'chart').length;
+        sections.push({ id: uid(part.title), kind: 'dashpart', title: part.title, sheet: dash, part, index: i, icon: n ? 'chart' : 'table', group: 'dash', badge: n || null });
+      });
 
     const ordered = wb.SheetNames.filter((n) => n !== dash).map((n, i) => {
       const a = state.sheets[n];
-      const items = state.parts && state.parts.sheets[n] ? state.parts.sheets[n].items : [];
-      const charts = items.filter((x) => x.type === 'chart').length;
+      const charts = sheetItems(n).filter((x) => x.type === 'chart').length;
       const hasContent = (a && (a.tables.length || a.kpis.length)) || charts;
       // prioridad: hojas a las que llevan las macros/botones, luego las que alimentan el tablero
       const score = (navTargets.has(n) ? 0 : chartSources.has(n) ? 1 : 2) * 1000 + i;
@@ -722,13 +890,16 @@
     for (const o of ordered) {
       if (!o.hasContent) continue;
       const st = sheetState(o.n);
+      const info = state.parts && state.parts.sheets[o.n];
+      const big = o.a && o.a.tables.some((t) => t.rows.length > 300);
+      const isData = DATA_RE.test(o.n) || (info && info.pivots >= 3) || (big && !o.charts);
       sections.push({
         id: uid(o.n),
         kind: 'sheet',
         title: o.n,
         sheet: o.n,
         icon: o.charts ? 'chart' : 'sheet',
-        group: st === 'visible' ? 'sheets' : 'hidden',
+        group: st !== 'visible' ? 'hidden' : isData ? 'data' : 'sheets',
         macroRefs: macroSheets.get(o.n) || [],
         navTarget: navTargets.has(o.n),
         feedsDashboard: chartSources.has(o.n),
@@ -742,7 +913,7 @@
   }
 
   function sectionForSheet(name) {
-    return state.sections.find((s) => s.sheet === name) || null;
+    return state.sections.find((s) => s.sheet === name && s.kind !== 'dashpart') || null;
   }
 
   /* ---------- navegación ---------- */
@@ -751,17 +922,21 @@
     nav.innerHTML = '';
     const link = (s) =>
       el('a', { href: '#/' + s.id, 'data-id': s.id }, icon(s.icon, 17), el('span', { class: 'nav-text' }, s.title), s.badge ? el('span', { class: 'nav-badge' }, s.badge) : null);
-    const main = state.sections.filter((s) => s.group === 'main');
-    const sheets = state.sections.filter((s) => s.group === 'sheets');
-    const hidden = state.sections.filter((s) => s.group === 'hidden');
-    const tools = state.sections.filter((s) => s.group === 'tools');
-    nav.append(...main.map(link));
-    if (sheets.length) nav.append(el('div', { class: 'nav-label' }, 'Hojas del archivo'), ...sheets.map(link));
-    if (hidden.length) {
-      const d = el('details', {}, el('summary', { class: 'nav-label' }, `Hojas ocultas (${hidden.length})`), ...hidden.map(link));
-      nav.append(d);
-    }
-    nav.append(el('div', { class: 'nav-label' }, 'Herramientas'), ...tools.map(link));
+    const by = (g) => state.sections.filter((s) => s.group === g);
+    const collapsible = (label, list, open) => {
+      const d = el('details', {}, el('summary', { class: 'nav-label' }, `${label} (${list.length})`), ...list.map(link));
+      if (open) d.open = true;
+      return d;
+    };
+    nav.append(...by('main').map(link));
+    if (by('dash').length) nav.append(el('div', { class: 'nav-label' }, 'Dashboard' + (state.dash && state.dash.header.period ? ' · ' + state.dash.header.period : '')), ...by('dash').map(link));
+    if (by('sheets').length) nav.append(el('div', { class: 'nav-label' }, by('dash').length ? 'Otras hojas' : 'Hojas del archivo'), ...by('sheets').map(link));
+    if (by('data').length) nav.append(collapsible('Bases de datos', by('data'), false));
+    if (by('hidden').length) nav.append(collapsible('Hojas ocultas', by('hidden'), false));
+    nav.append(el('div', { class: 'nav-label' }, 'Herramientas'), ...by('tools').map(link));
+    // si la sección activa está dentro de un grupo plegado, abrirlo
+    const active = nav.querySelector(`a[data-id="${currentId()}"]`);
+    if (active && active.closest('details')) active.closest('details').open = true;
   }
 
   function currentId() {
@@ -1063,11 +1238,62 @@
         })
         .sort((a, b) => a.score - b.score)[0];
       if (label && label.score < 6) used.add(label.o);
-      kpis.push({ label: label && label.score < 6 ? label.o.text : s.name, value: cell.v, text: A.cellText(cell), format: cell.z });
+      kpis.push({ label: label && label.score < 6 ? label.o.text : s.name, value: cell.v, text: A.cellText(cell), format: cell.z, fromShape: true, r: s.pos.from.row, c: s.pos.from.col });
     }
     const a = state.sheets[sheet];
     if (a) for (const k of a.kpis) if (!kpis.some((x) => x.text === k.text && x.label === k.label)) kpis.push(k);
-    return { kpis: kpis.slice(0, 16), used };
+    return { kpis, used };
+  }
+
+  // Dibuja imágenes EMF (tablas pegadas como imagen en Excel) como SVG
+  function renderEmf(it) {
+    if (it._svg !== undefined) return it._svg ? it._svg.cloneNode(true) : null;
+    it._svg = null;
+    if (!window.EMF || it.unsupported !== 'EMF' || !it.bytes) return null;
+    try {
+      const { svg } = EMF.render(it.bytes);
+      if (!svg.childNodes.length) return null;
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', it.descr || it.name || 'Imagen del tablero');
+      it._svg = svg;
+      return svg.cloneNode(true);
+    } catch (e) {
+      console.warn('No se pudo dibujar la imagen EMF', e);
+      return null;
+    }
+  }
+
+  // Contenido de una parte del Dashboard: indicadores, gráficos en su disposición y tablas
+  function renderPart(node, p, sheet, opts) {
+    if (p.kpis.length && !opts.skipKpis) node.append(el('div', { class: 'kpi-grid', style: { marginBottom: '16px' } }, ...p.kpis.map(kpiCard)));
+    if (p.items.length) {
+      if (opts.skipKpis && p.title !== 'General') node.append(el('h2', { class: 'block-title' }, p.title));
+      const grid = el('div', { class: 'dash-grid' });
+      for (const { it, span, height } of layoutItems(p.items)) {
+        let card = null;
+        if (it.type === 'chart') {
+          const model = excelChartModel(it, sheet);
+          if (!model) continue;
+          card = chartCard(model, { height: height - 70 });
+        } else if (it.type === 'image' && it.unsupported && renderEmf(it)) {
+          card = el('div', { class: 'card image-card image-card--big emf-card' }, renderEmf(it));
+        } else if (it.type === 'image' && it.unsupported) {
+          card = el('div', { class: 'card text-card placeholder-card' }, icon('image', 22), el('div', {}, el('b', {}, 'Imagen pegada en el Excel'), el('p', {}, `Esta parte del Dashboard es una imagen ${it.unsupported} (por ejemplo, una tabla pegada como imagen) que el navegador no puede mostrar. Para verla aquí, pégala en Excel como imagen PNG o como tabla con valores.`)));
+        } else if (it.type === 'image') {
+          card = el('div', { class: 'card image-card image-card--big' }, el('img', { src: it.src, alt: it.descr || it.name || 'Imagen del tablero', loading: 'lazy' }));
+        } else {
+          card = el('div', { class: 'card text-card' }, it.text);
+        }
+        card.style.gridColumn = `span ${span}`;
+        grid.append(card);
+      }
+      node.append(grid);
+    }
+    if (p.notes && p.notes.length) node.append(el('div', { class: 'part-notes' }, ...p.notes.map((n) => el('p', {}, n.text))));
+    p.tables.forEach((t) => {
+      node.append(el('h2', { class: 'block-title' }, t.title || 'Tabla', el('span', { class: 'muted' }, t.range)));
+      node.append(el('div', { class: 'table-block' }, dataTableCard(t, { limit: 15, title: 'Datos' })));
+    });
   }
 
   /* =======================================================================
@@ -1076,85 +1302,25 @@
   const RENDER = {
     dashboard(node, sec) {
       const sheet = sec.sheet;
-      const items = sheet && state.parts && state.parts.sheets[sheet] ? state.parts.sheets[sheet].items : [];
+      const d = state.dash;
       const props = state.wb.Props || {};
-      const titleShape = items
-        .filter((i) => i.type === 'shape' && !i.textlink && !i.macro && i.text && i.text.length < 120)
-        .sort((x, y) => x.pos.from.row - y.pos.from.row || (y.pos.to.col - y.pos.from.col) - (x.pos.to.col - x.pos.from.col))[0];
-      const sheetTitle = state.sheets[sheet] && state.sheets[sheet].texts.slice().sort((x, y) => x.r - y.r || x.c - y.c)[0];
-      const kpiInfo = sheet ? dashboardKpis(sheet, items) : { kpis: [], used: new Set() };
-      const shapeOk = titleShape && titleShape.pos.from.row <= 4 && !kpiInfo.used.has(titleShape);
-      const cellOk = sheetTitle && sheetTitle.r <= 4;
-      const heading =
-        (cellOk && (!shapeOk || sheetTitle.r <= titleShape.pos.from.row) && sheetTitle.text) || (shapeOk && titleShape.text) || props.Title || sec.title;
-      const subtitle = sheet
-        ? `Réplica interactiva de la hoja «${sheet}» del archivo ${state.file.name}.`
-        : `Resumen generado automáticamente a partir de las hojas de ${state.file.name}.`;
-      node.append(sectionHead({ ...sec, title: heading }, 'Resumen', subtitle));
       if (state.file.source === 'local' && state.repoFile)
         node.append(el('div', { class: 'notice' }, 'Estás viendo un archivo cargado en este navegador.', el('button', { class: 'btn btn--sm', onclick: useRepoFile }, 'Volver al archivo publicado')));
 
-      // Accesos (botones con macro de la hoja)
-      const buttons = items.filter((i) => (i.type === 'control' && i.control === 'Button') || ((i.type === 'shape' || i.type === 'image') && i.macro));
-      const links = [];
-      for (const b of buttons) {
-        const t = macroTarget(b.macro);
-        const label = (b.text || b.name || (t && (t.proc ? t.proc.name : t.name)) || 'Macro').split('\n')[0];
-        if (t && t.section) links.push(el('a', { class: 'chip chip--macro', href: '#/' + t.section.id, title: 'Ejecutaba la macro ' + (t.proc ? t.proc.name : '') }, icon('chev', 12), label));
-        else if (t) links.push(el('a', { class: 'chip chip--macro', href: '#/' + (state.sections.find((s) => s.kind === 'macros') || {}).id, title: 'Ver la macro' }, icon('macro', 13), label));
-      }
-      if (links.length) node.append(el('div', { class: 'quick-links', 'aria-label': 'Botones del tablero' }, ...links));
-
-      // Indicadores
-      let { kpis, used } = kpiInfo;
-      if (!kpis.length) {
-        for (const n of state.wb.SheetNames) {
-          const a = state.sheets[n];
-          if (!a) continue;
-          for (const t of a.tables) {
-            const ks = A.timeKpis(t, A.suggestChart(t));
-            if (ks[0]) kpis.push({ ...ks[0], source: n });
-            if (kpis.length >= 8) break;
-          }
-          if (kpis.length >= 8) break;
-        }
-      }
-      if (kpis.length) {
-        node.append(el('h2', { class: 'block-title' }, 'Indicadores clave'));
-        node.append(el('div', { class: 'kpi-grid' }, ...kpis.map(kpiCard)));
-      }
-
-      // Gráficos, imágenes y textos en la disposición de la hoja
-      const visual = items.filter((i) => i.type === 'chart' || (i.type === 'image' && !i.macro) || (i.type === 'shape' && !used.has(i) && !i.macro && i !== titleShape && i.text && i.text.length > 30));
-      const charts = visual.filter((i) => i.type === 'chart');
-      if (visual.length) {
-        node.append(el('h2', { class: 'block-title' }, 'Gráficos del tablero', el('span', { class: 'muted' }, `${charts.length} gráfico${charts.length === 1 ? '' : 's'}`)));
-        const grid = el('div', { class: 'dash-grid' });
-        for (const { it, span, height } of layoutItems(visual)) {
-          let card = null;
-          if (it.type === 'chart') {
-            const model = excelChartModel(it, sheet);
-            if (!model) continue;
-            card = chartCard(model, { height: height - 70 });
-          } else if (it.type === 'image') {
-            card = el('div', { class: 'card image-card' }, el('img', { src: it.src, alt: it.descr || it.name || 'Imagen del tablero' }));
-          } else {
-            card = el('div', { class: 'card text-card' }, it.text);
-          }
-          card.style.gridColumn = `span ${span}`;
-          grid.append(card);
-        }
-        node.append(grid);
-      } else {
-        // Sin gráficos en Excel: uno automático por hoja
+      if (!d) {
+        node.append(sectionHead(sec, 'Resumen', `Resumen generado automáticamente a partir de las hojas de ${state.file.name}.`));
+        const kpis = [];
         const autos = [];
         for (const n of state.wb.SheetNames) {
           const a = state.sheets[n];
-          if (!a || n === sheet || sheetState(n) !== 'visible') continue;
-          const t = a.tables[0];
-          if (t) autos.push(t);
-          if (autos.length >= 6) break;
+          if (!a || sheetState(n) !== 'visible') continue;
+          for (const t of a.tables) {
+            const ks = A.timeKpis(t, A.suggestChart(t));
+            if (ks[0] && kpis.length < 8) kpis.push({ ...ks[0], source: n });
+          }
+          if (a.tables[0] && autos.length < 6) autos.push(a.tables[0]);
         }
+        if (kpis.length) node.append(el('h2', { class: 'block-title' }, 'Indicadores clave'), el('div', { class: 'kpi-grid' }, ...kpis.map(kpiCard)));
         if (autos.length) {
           node.append(el('h2', { class: 'block-title' }, 'Panorama por hoja'));
           const grid = el('div', { class: 'dash-grid' });
@@ -1167,21 +1333,89 @@
           });
           node.append(grid);
         }
+        return;
       }
 
-      // Tablas propias de la hoja dashboard
-      const a = sheet && state.sheets[sheet];
-      if (a && a.tables.length) {
-        node.append(el('h2', { class: 'block-title' }, 'Tablas del tablero'));
-        a.tables.forEach((t) => node.append(el('div', { class: 'table-block' }, dataTableCard(t, { limit: 15 }))));
+      // Banda de encabezado como la del Excel
+      const title = d.header.title || props.Title || sheet;
+      node.append(el('header', { class: 'hero' },
+        d.logo ? el('img', { class: 'hero__logo', src: d.logo.src, alt: '' }) : null,
+        el('div', { class: 'hero__text' },
+          el('div', { class: 'eyebrow eyebrow--light' }, 'Resumen del tablero'),
+          el('h1', { class: 'hero__title', id: 'h-' + sec.id }, title),
+          el('p', { class: 'hero__sub' }, `Hoja «${sheet}» · ${state.file.name}`)),
+        d.header.period ? el('div', { class: 'hero__period' }, el('span', {}, 'Corte'), el('b', {}, d.header.period)) : null));
+
+      // Accesos (botones con macro de la hoja)
+      const links = [];
+      for (const b of d.buttons) {
+        const t = macroTarget(b.macro);
+        const label = (b.text || b.name || (t && (t.proc ? t.proc.name : t.name)) || 'Macro').split('\n')[0];
+        if (t && t.section) links.push(el('a', { class: 'chip chip--macro', href: '#/' + t.section.id, title: 'Ejecutaba la macro ' + (t.proc ? t.proc.name : '') }, icon('chev', 12), label));
+        else if (t) links.push(el('a', { class: 'chip chip--macro', href: '#/' + (state.sections.find((s) => s.kind === 'macros') || {}).id, title: 'Ver la macro' }, icon('macro', 13), label));
+      }
+      if (links.length) node.append(el('div', { class: 'quick-links', 'aria-label': 'Botones del tablero' }, ...links));
+
+      // Indicadores destacados de todas las secciones
+      const partOf = (k) => d.parts.find((p) => p.kpis.includes(k));
+      const kpis = d.split ? d.headline.map((k) => ({ ...k, source: partOf(k) && partOf(k).title !== 'General' ? partOf(k).title : null })) : d.headline;
+      if (kpis.length) {
+        node.append(el('h2', { class: 'block-title' }, 'Indicadores clave'));
+        node.append(el('div', { class: 'kpi-grid' }, ...kpis.map(kpiCard)));
       }
 
-      // Secciones relacionadas
+      if (!d.split) {
+        if (kpis.length) node.append(el('div', { style: { height: '16px' } }));
+        d.parts.forEach((p) => renderPart(node, p, sheet, { skipKpis: true }));
+      } else {
+        node.append(el('h2', { class: 'block-title' }, 'Secciones del tablero', el('span', { class: 'muted' }, `${d.parts.length} secciones`)));
+        const grid = el('div', { class: 'dash-grid section-cards' });
+        for (const s of state.sections.filter((x) => x.kind === 'dashpart')) {
+          const p = s.part;
+          const nCharts = p.items.filter((x) => x.type === 'chart').length;
+          const card = el('article', { class: 'card section-card' });
+          card.append(el('a', { class: 'section-card__head', href: '#/' + s.id },
+            el('div', {}, el('h3', { class: 'card__title' }, p.title), el('div', { class: 'card__sub' }, [nCharts ? `${nCharts} gráfico${nCharts === 1 ? '' : 's'}` : null, p.tables.length ? `${p.tables.length} tabla${p.tables.length === 1 ? '' : 's'}` : null, p.kpis.length ? `${p.kpis.length} indicador${p.kpis.length === 1 ? '' : 'es'}` : null].filter(Boolean).join(' · '))),
+            el('span', { class: 'section-card__go' }, 'Ver', icon('chev', 14))));
+          const first = p.items.find((x) => x.type === 'chart');
+          const model = first && excelChartModel(first, sheet);
+          if (p.kpis[0] && !model) card.append(el('div', { class: 'section-card__kpi' }, el('b', {}, p.kpis[0].text), el('span', {}, p.kpis[0].label)));
+          if (model) {
+            const holder = el('div', { class: 'section-card__chart' });
+            card.append(holder);
+            mountChart(holder, { ...model, panels: undefined, ...(model.panels ? model.panels[0] : {}) }, 200);
+          } else if (!p.kpis[0]) {
+            const img = p.items.find((x) => x.type === 'image');
+            const emf = img && img.unsupported ? renderEmf(img) : null;
+            if (emf) card.append(el('div', { class: 'image-card emf-card section-card__emf' }, emf));
+            else if (img && img.src) card.append(el('div', { class: 'image-card' }, el('img', { src: img.src, alt: '' })));
+            else if (p.tables[0]) card.append(el('p', { class: 'muted', style: { padding: '0 16px 16px', margin: 0 } }, p.tables[0].title || 'Tabla de datos'));
+          }
+          card.style.gridColumn = 'span 4';
+          grid.append(card);
+        }
+        node.append(grid);
+      }
+
+      // Otras hojas
       const others = state.sections.filter((s) => s.kind === 'sheet' && s.group === 'sheets');
       if (others.length) {
-        node.append(el('h2', { class: 'block-title' }, 'Explorar por hoja'));
+        node.append(el('h2', { class: 'block-title' }, 'Otras hojas del archivo'));
         node.append(el('div', { class: 'quick-links' }, ...others.map((s) => el('a', { class: 'chip', href: '#/' + s.id }, icon(s.icon, 14), s.title, s.feedsDashboard ? el('span', { class: 'pill pill--brand' }, 'alimenta el tablero') : null))));
       }
+    },
+
+    dashpart(node, sec) {
+      const d = state.dash;
+      const p = sec.part;
+      node.append(sectionHead(sec, 'Dashboard' + (d.header.period ? ' · ' + d.header.period : ''), d.header.title ? `${d.header.title} — hoja «${sec.sheet}»` : `Hoja «${sec.sheet}»`));
+      renderPart(node, p, sec.sheet, {});
+      const parts = state.sections.filter((x) => x.kind === 'dashpart');
+      const i = parts.indexOf(sec);
+      const prev = parts[i - 1], next = parts[i + 1];
+      node.append(el('nav', { class: 'pager', 'aria-label': 'Secciones del tablero' },
+        prev ? el('a', { class: 'btn', href: '#/' + prev.id }, '← ' + prev.title) : el('span'),
+        next ? el('a', { class: 'btn btn--primary', href: '#/' + next.id }, next.title + ' →') : el('a', { class: 'btn', href: '#/' + state.sections[0].id }, 'Volver al resumen')));
     },
 
     sheet(node, sec) {
