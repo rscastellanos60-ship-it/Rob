@@ -1,5 +1,6 @@
 {
   "organizacion": "Fedepalma",
   "titulo": "Tablero de indicadores",
-  "archivo": null
+  "archivo": null,
+  "seccionesTorta": ["Mapa Social"]
 }
