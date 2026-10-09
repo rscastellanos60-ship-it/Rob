@@ -44,6 +44,55 @@
     chev: '<path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/>',
     leaf: '<path d="M12 21c0-5 .5-9 3-12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 12c-3.5-1-6.5-.2-9 2 3 .8 6.2.6 9-2zm0-2.5C10.6 6 8 4 4.5 3.5c1 3.4 3.8 5.6 7.5 6zm2.6-1C15.6 5.2 18 3.4 21.5 3c-.7 3.5-3.1 5.8-6.9 5.5zM15 9c3.4-.6 6 .6 7.5 3-3.1.7-5.8-.3-7.5-3z" fill="currentColor"/>',
   };
+  Object.assign(ICONS, {
+    woman: '<circle cx="12" cy="3.6" r="2.3"/><path d="M10.2 7.2h3.6c.63 0 1.18.42 1.35 1.03L17.2 15h-2.7v7h-1.7v-7h-1.6v7H9.5v-7H6.8l2.05-6.77c.17-.61.72-1.03 1.35-1.03z"/>',
+    man: '<circle cx="12" cy="3.6" r="2.3"/><path d="M9.6 7.2h4.8c.88 0 1.6.72 1.6 1.6V15h-1.9v7h-1.65v-6.2h-.9V22H9.9v-7H8V8.8c0-.88.72-1.6 1.6-1.6z"/>',
+    people: '<circle cx="8" cy="5" r="2.3"/><circle cx="16.5" cy="6" r="2"/><path d="M5 9h6a2 2 0 0 1 2 2v4h-1.6v7H8.9v-5H7.1v5H4.6v-7H3v-4a2 2 0 0 1 2-2zm9.6 1.2h3.8a1.8 1.8 0 0 1 1.8 1.8v3.6h-1.4V22h-2.2v-5.4h-.8V22h-1.6v-6.4H14v-4h.6z"/>',
+    org: '<path d="M9.5 2h5v4.5h-1.6V9H19v3.5h1.5V17h-4.5v-4.5H17V11h-4.1v1.5h1.6V17h-5v-4.5h1.6V11H7v1.5h1.5V17H4v-4.5h1V9h6.1V6.5H9.5z"/>',
+    cycle: '<path d="M12 4V1L8 5l4 4V6a6 6 0 0 1 6 6c0 1-.25 1.95-.7 2.78l1.46 1.46A8 8 0 0 0 20 12a8 8 0 0 0-8-8zm-6 8c0-1 .25-1.95.7-2.78L5.24 7.76A8 8 0 0 0 4 12a8 8 0 0 0 8 8v3l4-4-4-4v3a6 6 0 0 1-6-6z"/>',
+    exit: '<path d="M4 3h10v2H6v14h8v2H4zm12.2 4.2L21 12l-4.8 4.8-1.4-1.4 2.4-2.4H9v-2h8.2l-2.4-2.4z"/>',
+    usercheck: '<circle cx="9" cy="7" r="3.5"/><path d="M2 20c0-3.6 3.1-6 7-6s7 2.4 7 6v1H2zm14.5-9.6 1.4-1.4 1.6 1.6 3.1-3.1 1.4 1.4-4.5 4.5z"/>',
+    target: '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a6 6 0 1 0 6 6 6 6 0 0 0-6-6zm0 10a4 4 0 1 1 4-4 4 4 0 0 1-4 4zm0-6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/>',
+    hourglass: '<path d="M6 2h12v2h-1v3.2c0 .8-.32 1.56-.88 2.12L13.4 12l2.72 2.68c.56.56.88 1.32.88 2.12V20h1v2H6v-2h1v-3.2c0-.8.32-1.56.88-2.12L10.6 12 7.88 9.32A3 3 0 0 1 7 7.2V4H6zm3 2v3.2l3 3 3-3V4z"/>',
+    beach: '<path d="M12 2a9 9 0 0 1 9 9h-8v9h3v2H8v-2h3v-9H3a9 9 0 0 1 9-9z"/>',
+    calendarx: '<path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v11h14V9zm4.4 2.6L12 14.2l2.6-2.6 1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4-2.6-2.6-2.6 2.6L8 17.6l2.6-2.6L8 12.4z"/>',
+    balance: '<path d="M11 3h2v2.1l5.6 1.4L21.5 13A3.5 3.5 0 0 1 15 13l2.6-5.2L13 6.7V19h4v2H7v-2h4V6.7L6.4 7.8 9 13a3.5 3.5 0 0 1-6.5 0l2.9-6.5L11 5.1zm-5.5 6.3L4 12.5h3zm13 0L17 12.5h3z"/>',
+    home: '<path d="M12 3 2 11h3v10h5v-6h4v6h5V11h3z"/>',
+    grad: '<path d="M12 3 1 9l11 6 9-4.9V17h2V9zM5 13.2v4L12 21l7-3.8v-4L12 17z"/>',
+    shield: '<path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.8-4.8 1.4 1.4z"/>',
+    clipboard: '<path d="M9 2h6v2h3a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3zm0 4v1.5h6V6zm-1 5v2h8v-2zm0 4v2h6v-2z"/>',
+    clock: '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm1-13h-2v6l5 3 1-1.6-4-2.4z"/>',
+    map: '<path d="M12 2a7 7 0 0 1 7 7c0 5.2-7 13-7 13S5 14.2 5 9a7 7 0 0 1 7-7zm0 4.5A2.5 2.5 0 1 0 14.5 9 2.5 2.5 0 0 0 12 6.5z"/>',
+    heart: '<path d="M12 21 10.6 19.7C5.4 15 2 11.9 2 8.1A5 5 0 0 1 7.1 3 5.6 5.6 0 0 1 12 5.5 5.6 5.6 0 0 1 16.9 3 5 5 0 0 1 22 8.1c0 3.8-3.4 6.9-8.6 11.6z"/>',
+    briefcase: '<path d="M9 3h6a2 2 0 0 1 2 2v2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2zm0 4h6V5H9z"/>',
+  });
+
+  // Ícono según el tema del texto (secciones, indicadores, gráficos)
+  const TOPICS = [
+    [/g[eé]nero|sexo|mujer|femenin/i, 'woman'],
+    [/estructura|cargos|ocupaci[oó]n|hc\b|planta/i, 'org'],
+    [/mapa social|generaci[oó]n|social/i, 'people'],
+    [/rotaci[oó]n/i, 'cycle'],
+    [/control/i, 'clipboard'],
+    [/retiro/i, 'exit'],
+    [/cobertura/i, 'target'],
+    [/selecci[oó]n|\bans\b|vacante/i, 'usercheck'],
+    [/pensi[oó]n|prepension|antig[uü]edad/i, 'hourglass'],
+    [/vacacion/i, 'beach'],
+    [/ausent/i, 'calendarx'],
+    [/equidad/i, 'balance'],
+    [/teletrabajo|remoto/i, 'home'],
+    [/desarrollo|inducci[oó]n|entrenamiento|formaci[oó]n|desempe[nñ]o|capacitaci/i, 'grad'],
+    [/seguridad|salud|sst|accident/i, 'shield'],
+    [/geogr|zona|sede/i, 'map'],
+    [/estado civil|engagement|bienestar|enps/i, 'heart'],
+    [/contrataci[oó]n|salario|contrato/i, 'briefcase'],
+  ];
+  const topicIcon = (text, fallback) => {
+    const hit = TOPICS.find(([re]) => re.test(String(text || '')));
+    return hit ? hit[1] : fallback;
+  };
+
   const icon = (name, size = 18) => {
     const span = document.createElement('span');
     span.style.display = 'inline-flex';
@@ -125,7 +174,8 @@
 
   /* ---------- estado ---------- */
   const state = {
-    config: { organizacion: '', titulo: 'Tablero de indicadores', archivo: null },
+    // seccionesTorta: secciones del Dashboard cuyos gráficos de categorías se muestran como torta
+    config: { organizacion: '', titulo: 'Tablero de indicadores', archivo: null, seccionesTorta: ['Mapa Social'] },
     wb: null,
     parts: null,
     sheets: {},
@@ -246,6 +296,31 @@
     },
   };
 
+  // Total escrito en el centro de los anillos (no se grafica como porción)
+  const centerTotal = {
+    id: 'centerTotal',
+    afterDraw(chart, _args, opts) {
+      if (!opts || !opts.text) return;
+      const arc = chart.getDatasetMeta(0).data[0];
+      if (!arc) return;
+      const { x, y, innerRadius } = arc.getProps(['x', 'y', 'innerRadius'], true);
+      if (!innerRadius || innerRadius < 22) return;
+      const t = tokens();
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const size = Math.max(14, Math.min(30, innerRadius * 0.5));
+      ctx.fillStyle = t.text;
+      ctx.font = `750 ${size}px ${t.font}`;
+      ctx.fillText(opts.text, x, y - size * 0.25);
+      ctx.fillStyle = t.muted;
+      ctx.font = `600 ${Math.max(10, size * 0.42)}px ${t.font}`;
+      ctx.fillText(opts.label, x, y + size * 0.55);
+      ctx.restore();
+    },
+  };
+
   // Línea vertical de referencia al pasar el cursor
   const crosshair = {
     id: 'crosshair',
@@ -308,7 +383,16 @@
           maintainAspectRatio: false,
           cutout: model.type === 'doughnut' ? (model.cutout || 55) + '%' : 0,
           layout: { padding: 6 },
+          // leyenda abajo cuando la tarjeta es angosta
+          onResize: (chart, size) => {
+            const pos = size.width < 380 ? 'bottom' : 'right';
+            if (chart.options.plugins.legend.position !== pos) {
+              chart.options.plugins.legend.position = pos;
+              chart.update('none');
+            }
+          },
           plugins: {
+            centerTotal: model.type === 'doughnut' && model.totalText ? { text: model.totalText, label: model.totalLabel || 'Total' } : null,
             legend: { position: 'right', labels: { color: t.text2, usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, padding: 12, font: { size: 12 } } },
             tooltip: {
               callbacks: {
@@ -321,7 +405,7 @@
             valueLabels: { enabled: model.showValues || model.showPercent || pairs.length <= 6, percent: true },
           },
         },
-        plugins: [valueLabels],
+        plugins: [valueLabels, centerTotal],
       };
     }
 
@@ -422,6 +506,8 @@
     });
 
     const fmt = model.yFormat || (series[0] && series[0].fmt);
+    // conteos (todos enteros): sin marcas decimales en el eje
+    const allInts = !model.percent && series.every((x) => (x.values || []).every((v) => v == null || Number.isInteger(v)));
     const valueAxis = {
       beginAtZero: model.min == null,
       min: model.min ?? undefined,
@@ -429,7 +515,7 @@
       stacked: !!model.stacked,
       grid: { color: t.grid, drawTicks: false },
       border: { display: false },
-      ticks: { color: t.text2, padding: 8, font: { size: 11.5 }, callback: (v) => fmtTick(v, fmt), maxTicksLimit: 7 },
+      ticks: { color: t.text2, padding: 8, font: { size: 11.5 }, callback: (v) => fmtTick(v, fmt), maxTicksLimit: 7, precision: allInts ? 0 : undefined },
       title: model.yTitle ? { display: true, text: model.yTitle, color: t.muted, font: { size: 11.5 } } : undefined,
     };
     const catAxis = {
@@ -565,8 +651,82 @@
         return el('td', { class: 'num' }, fmtValue(v, s.fmt));
       })));
     });
+    (model.totals || []).forEach((tot) => {
+      body.append(el('tr', { class: 'is-total' }, el('td', {}, tot.label), ...model.series.map((s) => el('td', { class: 'num' }, fmtValue(s.total, s.fmt)))));
+    });
     table.append(body);
     return el('div', { class: 'data-table-inline' }, table);
+  }
+
+  /* ---------- gráficos por sexo: pictograma con íconos de mujer y hombre ---------- */
+  function genderInfo(model) {
+    if (!model || model.panels || model.series.length !== 1 || model.labels.length !== 2) return null;
+    const kind = (l) => (/femen|mujer|female|\bf\b/i.test(l) ? 'woman' : /mascul|hombre|male|\bm\b/i.test(l) ? 'man' : null);
+    const kinds = model.labels.map(kind);
+    if (!kinds.includes('woman') || !kinds.includes('man')) return null;
+    const vals = model.series[0].values.map((v) => (typeof v === 'number' ? v : 0));
+    const sum = vals.reduce((a, b) => a + b, 0);
+    if (!sum || vals.some((v) => v < 0)) return null;
+    const fmt = model.series[0].fmt;
+    return {
+      total: model.totalText || fmtValue(sum, fmt),
+      items: model.labels.map((l, i) => ({ label: l, kind: kinds[i], value: vals[i], text: fmtValue(vals[i], fmt), pct: vals[i] / sum, color: `var(--series-${i + 1})` })),
+    };
+  }
+
+  // Figura recortada a la silueta (más grande que el ícono normal)
+  function figure(kind) {
+    const span = document.createElement('span');
+    span.innerHTML = `<svg viewBox="6.3 1 11.4 21.4" fill="currentColor" aria-hidden="true">${ICONS[kind]}</svg>`;
+    return span.firstChild;
+  }
+
+  function genderBlock(model, compact) {
+    const g = genderInfo(model);
+    const wrap = el('div', { class: 'gender' + (compact ? ' gender--compact' : '') });
+    // 10 figuras: cada una equivale al 10 %
+    const picto = el('div', { class: 'gender__picto', role: 'img', 'aria-label': g.items.map((x) => `${x.label} ${Math.round(x.pct * 100)}%`).join(', ') });
+    const nFirst = Math.round(g.items[0].pct * 10);
+    for (let i = 0; i < 10; i++) {
+      const it = i < nFirst ? g.items[0] : g.items[1];
+      const f = el('span', { class: 'gender__fig', style: { color: it.color } }, figure(it.kind));
+      f.style.animationDelay = i * 40 + 'ms';
+      picto.append(f);
+    }
+    wrap.append(picto);
+    const bar = el('div', { class: 'gender__bar', 'aria-hidden': 'true' }, ...g.items.map((x) => el('span', { style: { width: (x.pct * 100).toFixed(2) + '%', background: x.color } })));
+    wrap.append(bar);
+    const stats = el('div', { class: 'gender__stats' });
+    g.items.forEach((x) => stats.append(el('div', { class: 'gender__stat' },
+      el('span', { class: 'gender__badge', style: { background: x.color } }, icon(x.kind, compact ? 18 : 24)),
+      el('div', {},
+        el('div', { class: 'gender__value' }, x.text, el('span', { class: 'gender__pct' }, el('span', { class: 'gender__dot' }, ' · '), (x.pct * 100).toFixed(1).replace('.', ',') + '%')),
+        el('div', { class: 'gender__label' }, x.label)))));
+    wrap.append(stats);
+    return wrap;
+  }
+
+  function genderCard(model) {
+    const g = genderInfo(model);
+    const card = el('article', { class: 'card chart-card gender-card' });
+    const tools = el('div', { class: 'card__tools' });
+    card.append(el('div', { class: 'card__head' },
+      el('div', { class: 'card__titles' }, el('h3', { class: 'card__title' }, model.title || 'Distribución por sexo'), model.subtitle ? el('div', { class: 'card__sub' }, model.subtitle) : null),
+      el('div', { class: 'chart-total' }, el('span', {}, model.totalLabel || 'Total'), el('b', {}, g.total)),
+      tools));
+    const body = el('div', { class: 'card__body' }, genderBlock(model, false));
+    card.append(body);
+    let tableEl = null;
+    const tableBtn = el('button', { class: 'icon-btn icon-btn--plain', title: 'Ver datos', 'aria-label': 'Ver datos', 'aria-pressed': 'false' }, icon('table', 16));
+    tableBtn.addEventListener('click', () => {
+      if (tableEl) {
+        tableEl.remove();
+        tableEl = null;
+      } else body.append((tableEl = dataTableFor(model)));
+      tableBtn.setAttribute('aria-pressed', String(!!tableEl));
+    });
+    tools.append(tableBtn);
+    return card;
   }
 
   function chartCard(model, opts = {}) {
@@ -574,6 +734,7 @@
     const tools = el('div', { class: 'card__tools' });
     const head = el('div', { class: 'card__head' },
       el('div', { class: 'card__titles' }, el('h3', { class: 'card__title' }, model.title || 'Gráfico'), model.subtitle ? el('div', { class: 'card__sub' }, model.subtitle) : null),
+      model.totalText && model.type !== 'doughnut' ? el('div', { class: 'chart-total', title: 'El total no se grafica para no competir con las categorías' }, el('span', {}, model.totalLabel || 'Total'), el('b', {}, model.totalText)) : null,
       tools);
     card.append(head);
     if (opts.controls) card.append(opts.controls);
@@ -617,6 +778,57 @@
     doughnutChart: 'doughnut', scatterChart: 'scatter', bubbleChart: 'bubble', radarChart: 'radar',
     surfaceChart: 'line', surface3DChart: 'line',
   };
+
+  // Secciones configuradas como "torta": gráficos de una serie y pocas categorías -> anillo
+  function preferPie(model, partTitle) {
+    const wanted = (state.config.seccionesTorta || []).map((x) => Correcciones.fix(String(x)).toLowerCase().trim());
+    if (!model || !partTitle || !wanted.includes(String(partTitle).toLowerCase().trim())) return model;
+    if (model.panels || model.series.length !== 1 || !['bar', 'funnel', 'pie', 'doughnut'].includes(model.type)) return model;
+    const vals = model.series[0].values;
+    if (model.labels.length < 2 || model.labels.length > 8 || vals.some((v) => typeof v === 'number' && v < 0)) return model;
+    return { ...model, type: 'doughnut', horizontal: false, stacked: false, percent: false, cutout: 58, showPercent: true };
+  }
+
+  // Total del anillo: el de Excel si existía, o la suma de las porciones si son conteos
+  function withCenterTotal(model) {
+    if (!model || model.type !== 'doughnut' || model.totalText) return model;
+    const s = model.series[0];
+    const vals = (s && s.values) || [];
+    if (!vals.length || /%/.test(s.fmt || '') || vals.some((v) => typeof v === 'number' && !Number.isInteger(v))) return model;
+    return { ...model, totalText: fmtValue(vals.reduce((a, v) => a + (v || 0), 0), s.fmt), totalLabel: 'Total' };
+  }
+
+  function chartModelFor(item, sheet, partTitle) {
+    return withCenterTotal(preferPie(excelChartModel(item, sheet), partTitle));
+  }
+
+  // Categorías "Total" (por nombre, o la última si es la suma de las demás): se quitan del
+  // gráfico para que no compitan con las demás y se muestran escritas
+  function extractTotals(allSeries, labels) {
+    if (allSeries.some((s) => ['waterfall', 'scatter', 'bubble', 'line', 'area'].includes(s.kind))) return [];
+    const idx = new Set();
+    labels.forEach((l, i) => A.isTotal(l) && idx.add(i));
+    if (!idx.size && allSeries.length === 1 && labels.length >= 3 && !labels.some((l) => A.isTimeLike(l))) {
+      const v = allSeries[0].values;
+      const last = v.length - 1;
+      const rest = v.slice(0, last).reduce((s, x) => s + (x || 0), 0);
+      if (v[last] && rest && Math.abs(v[last] - rest) <= Math.abs(rest) * 0.01 + 1e-9) idx.add(last);
+    }
+    if (!idx.size || labels.length - idx.size < 2) return [];
+    const out = Array.from(idx).map((i) => ({
+      index: i,
+      label: A.isTotal(labels[i]) ? labels[i] : 'Total',
+      first: allSeries[0].values[i],
+      fmt: allSeries[0].fmt,
+    }));
+    const firstIdx = Math.min(...idx);
+    allSeries.forEach((s) => {
+      s.total = s.values[firstIdx];
+      s.values = s.values.filter((_, i) => !idx.has(i));
+      if (s.slices) s.slices = s.slices.filter((_, i) => !idx.has(i));
+    });
+    return out;
+  }
 
   // Nombre de serie ausente en Excel ("Serie1"): usar el encabezado sobre el rango de valores
   function headerAbove(f) {
@@ -700,6 +912,8 @@
     for (let i = allSeries.length - 1; i >= 0 && allSeries.length > 1; i--)
       if (allSeries[i].values.every((v) => v == null || v === 0)) allSeries.splice(i, 1);
     if (!allSeries.length) return null;
+    const totals = extractTotals(allSeries, labels);
+    if (totals.length) labels = labels.filter((_, i) => !totals.some((t) => t.index === i));
     if (!labels.length) labels = allSeries[0].values.map((_, i) => String(i + 1));
 
     let title = chart.title && chart.title.text;
@@ -729,6 +943,9 @@
       showValues: allSeries.some((s) => s.showValues),
       showPercent: allSeries.some((s) => s.showPercent),
       xFormat,
+      totals,
+      totalText: totals.length ? fmtValue(totals[0].first, totals[0].fmt) : null,
+      totalLabel: totals.length ? totals[0].label : null,
     };
     const valAxes = chart.axes.filter((a) => a.kind === 'valAx');
     const catAxis = chart.axes.find((a) => a.kind === 'catAx' || a.kind === 'dateAx');
@@ -758,7 +975,7 @@
           stacked: ss.some((s) => s.group.grouping === 'stacked' || s.group.grouping === 'percentStacked'),
         };
       });
-      return { title, subtitle, labels, series: allSeries, panels };
+      return { title, subtitle, labels, series: allSeries, panels, totals, totalText: base.totalText, totalLabel: base.totalLabel };
     }
     const ax = valAxes.find((a) => !a.deleted) || valAxes[0];
     return {
@@ -881,7 +1098,7 @@
     if (state.dash && state.dash.split)
       state.dash.parts.forEach((part, i) => {
         const n = part.items.filter((x) => x.type === 'chart').length;
-        sections.push({ id: uid(part.title), kind: 'dashpart', title: Correcciones.fix(part.title), sheet: dash, part, index: i, icon: n ? 'chart' : 'table', group: 'dash', badge: n || null });
+        sections.push({ id: uid(part.title), kind: 'dashpart', title: Correcciones.fix(part.title), sheet: dash, part, index: i, icon: topicIcon(part.title, n ? 'chart' : 'table'), group: 'dash', badge: n || null });
       });
 
     const ordered = wb.SheetNames.filter((n) => n !== dash).map((n, i) => {
@@ -980,8 +1197,9 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function sectionHead(sec, eyebrow, subtitle, extra) {
+  function sectionHead(sec, eyebrow, subtitle, extra, iconName) {
     return el('header', { class: 'section-head' },
+      iconName ? el('div', { class: 'section-icon', 'aria-hidden': 'true' }, icon(iconName, 30)) : null,
       el('div', { class: 'section-head__text' },
         el('div', { class: 'eyebrow' }, eyebrow),
         el('h1', { class: 'section-title', id: 'h-' + sec.id }, sec.title),
@@ -1010,6 +1228,8 @@
 
   function kpiCard(k, i) {
     const card = el('div', { class: 'card kpi' + (i % 4 === 1 ? ' kpi--gold' : '') });
+    const ic = topicIcon(k.label + ' ' + (k.source || ''), null);
+    if (ic) card.append(el('div', { class: 'kpi__icon', 'aria-hidden': 'true' }, icon(ic, 20)));
     card.append(el('div', { class: 'kpi__label', title: k.label }, k.label));
     const valueText = k.text || fmtValue(k.value, k.format);
     card.append(el('div', { class: 'kpi__value' }, valueText, k.unit ? el('span', { class: 'kpi__unit' }, k.unit) : null));
@@ -1269,18 +1489,50 @@
     }
   }
 
+  const isPieSection = (title) =>
+    (state.config.seccionesTorta || []).some((x) => Correcciones.fix(String(x)).toLowerCase().trim() === String(title || '').toLowerCase().trim());
+
+  // Secciones de tortas: filas completas de tarjetas (el pictograma ocupa doble ancho)
+  function packCards(items, models) {
+    const sorted = items.slice().sort((a, b) => a.pos.from.row - b.pos.from.row || a.pos.from.col - b.pos.from.col);
+    const unit = (it) => (it.type === 'chart' && genderInfo(models.get(it)) ? 2 : it.type === 'chart' ? 1 : 4);
+    const rows = [];
+    for (const it of sorted) {
+      const u = unit(it);
+      const row = rows[rows.length - 1];
+      if (row && row.units + u <= 4) {
+        row.items.push(it);
+        row.units += u;
+      } else rows.push({ items: [it], units: u });
+    }
+    const out = [];
+    for (const row of rows) {
+      let used = 0;
+      row.items.forEach((it, i) => {
+        const span = i === row.items.length - 1 ? 12 - used : Math.round((12 * unit(it)) / row.units);
+        used += span;
+        out.push({ it, span, height: row.units >= 4 ? 380 : 420 });
+      });
+    }
+    return out;
+  }
+
   // Contenido de una parte del Dashboard: indicadores, gráficos en su disposición y tablas
   function renderPart(node, p, sheet, opts) {
     if (p.kpis.length && !opts.skipKpis) node.append(el('div', { class: 'kpi-grid', style: { marginBottom: '16px' } }, ...p.kpis.map(kpiCard)));
     if (p.items.length) {
       if (opts.skipKpis && p.title !== 'General') node.append(el('h2', { class: 'block-title' }, p.title));
       const grid = el('div', { class: 'dash-grid' });
-      for (const { it, span, height } of layoutItems(p.items)) {
+      const models = new Map(p.items.filter((it) => it.type === 'chart').map((it) => [it, chartModelFor(it, sheet, p.title)]));
+      for (let { it, span, height } of isPieSection(p.title) ? packCards(p.items, models) : layoutItems(p.items)) {
         let card = null;
         if (it.type === 'chart') {
-          const model = excelChartModel(it, sheet);
+          const model = models.get(it);
           if (!model) continue;
-          card = chartCard(model, { height: height - 70 });
+          const isGender = !!genderInfo(model);
+          card = isGender ? genderCard(model) : chartCard(model, { height: height - 70 });
+          // el pictograma necesita espacio para las 10 figuras
+          if (isGender) span = Math.max(span, 6);
         } else if (it.type === 'image' && it.unsupported && renderEmf(it)) {
           card = el('div', { class: 'card image-card image-card--big emf-card' }, renderEmf(it));
         } else if (it.type === 'image' && it.unsupported) {
@@ -1381,12 +1633,15 @@
           const nCharts = p.items.filter((x) => x.type === 'chart').length;
           const card = el('article', { class: 'card section-card' });
           card.append(el('a', { class: 'section-card__head', href: '#/' + s.id },
+            el('span', { class: 'section-card__icon', 'aria-hidden': 'true' }, icon(s.icon, 20)),
             el('div', {}, el('h3', { class: 'card__title' }, p.title), el('div', { class: 'card__sub' }, [nCharts ? `${nCharts} gráfico${nCharts === 1 ? '' : 's'}` : null, p.tables.length ? `${p.tables.length} tabla${p.tables.length === 1 ? '' : 's'}` : null, p.kpis.length ? `${p.kpis.length} indicador${p.kpis.length === 1 ? '' : 'es'}` : null].filter(Boolean).join(' · '))),
             el('span', { class: 'section-card__go' }, 'Ver', icon('chev', 14))));
           const first = p.items.find((x) => x.type === 'chart');
-          const model = first && excelChartModel(first, sheet);
+          const model = first && chartModelFor(first, sheet, p.title);
           if (p.kpis[0] && !model) card.append(el('div', { class: 'section-card__kpi' }, el('b', {}, p.kpis[0].text), el('span', {}, p.kpis[0].label)));
-          if (model) {
+          if (model && genderInfo(model)) {
+            card.append(el('div', { class: 'section-card__chart' }, genderBlock(model, true)));
+          } else if (model) {
             const holder = el('div', { class: 'section-card__chart' });
             card.append(holder);
             mountChart(holder, { ...model, panels: undefined, ...(model.panels ? model.panels[0] : {}) }, 200);
@@ -1414,7 +1669,7 @@
     dashpart(node, sec) {
       const d = state.dash;
       const p = sec.part;
-      node.append(sectionHead(sec, 'Dashboard' + (d.header.period ? ' · ' + d.header.period : ''), d.header.title ? `${d.header.title} — hoja «${sec.sheet}»` : `Hoja «${sec.sheet}»`));
+      node.append(sectionHead(sec, 'Dashboard' + (d.header.period ? ' · ' + d.header.period : ''), d.header.title ? `${d.header.title} — hoja «${sec.sheet}»` : `Hoja «${sec.sheet}»`, null, sec.icon));
       renderPart(node, p, sec.sheet, {});
       const parts = state.sections.filter((x) => x.kind === 'dashpart');
       const i = parts.indexOf(sec);
@@ -1448,7 +1703,7 @@
         node.append(el('h2', { class: 'block-title' }, 'Gráficos de la hoja'));
         const grid = el('div', { class: 'dash-grid' });
         for (const { it, span, height } of layoutItems(charts)) {
-          const model = excelChartModel(it, sec.sheet);
+          const model = withCenterTotal(excelChartModel(it, sec.sheet));
           if (!model) continue;
           const card = chartCard(model, { height: height - 70 });
           card.style.gridColumn = `span ${span}`;
