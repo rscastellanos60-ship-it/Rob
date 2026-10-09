@@ -798,6 +798,26 @@
     return { ...model, totalText: fmtValue(vals.reduce((a, v) => a + (v || 0), 0), s.fmt), totalLabel: 'Total' };
   }
 
+  // Tarjeta para un gráfico que en Excel usa los mismos datos que otro
+  function copyCard(model) {
+    return el('div', { class: 'card text-card placeholder-card' }, icon('chart', 22), el('div', {}, el('b', {}, model.title),
+      el('p', {}, `En el Excel este gráfico todavía usa los mismos datos que «${model.copyOf}», así que no se muestran aquí para no presentar cifras equivocadas. Para verlo, en Excel cambia sus datos (clic derecho sobre el gráfico → Seleccionar datos) por la tabla que le corresponde.`)));
+  }
+
+  // Gráficos de una hoja que apuntan exactamente a los mismos rangos que uno anterior
+  function markChartCopies(items) {
+    const seen = new Map();
+    // el original es el primero en la hoja (de arriba abajo, de izquierda a derecha)
+    const charts = items.filter((i) => i.type === 'chart').sort((x, y) => x.pos.from.row - y.pos.from.row || x.pos.from.col - y.pos.from.col);
+    for (const it of charts) {
+      const refs = it.chart.groups.flatMap((g) => g.series.map((s) => [s.cat && s.cat.f, s.val && s.val.f].join('|')));
+      if (!refs.length || refs.some((r) => !r.split('|')[1])) continue;
+      const key = refs.join(';');
+      if (seen.has(key)) it.copyOf = seen.get(key);
+      else seen.set(key, it);
+    }
+  }
+
   function chartModelFor(item, sheet, partTitle) {
     return withCenterTotal(preferPie(excelChartModel(item, sheet), partTitle));
   }
@@ -923,6 +943,12 @@
     }
     if (!title && !chart.autoTitleDeleted && allSeries.length === 1 && allSeries[0].name) title = allSeries[0].name;
     if (!title) title = item.name && !/^(chart|gráfico|grafico)\s*\d+$/i.test(item.name) ? item.name : allSeries.length === 1 && allSeries[0].name ? allSeries[0].name : 'Gráfico';
+    // gráfico copiado de otro sin cambiarle los datos: no mostrar cifras que no son suyas
+    if (item.copyOf) {
+      const owner = excelChartModel(item.copyOf, sheetName);
+      const norm = (t) => String(t || '').toLowerCase().trim();
+      if (owner && norm(owner.title) !== norm(title)) return { title, subtitle: 'Hoja ' + sheetName, copyOf: owner.title, labels: [], series: [] };
+    }
 
     // series sin nombre en Excel ("Serie1"): nombrarlas por lo que muestran
     allSeries.forEach((x, i) => {
@@ -1529,6 +1555,12 @@
         if (it.type === 'chart') {
           const model = models.get(it);
           if (!model) continue;
+          if (model.copyOf) {
+            card = copyCard(model);
+            card.style.gridColumn = `span ${span}`;
+            grid.append(card);
+            continue;
+          }
           const isGender = !!genderInfo(model);
           card = isGender ? genderCard(model) : chartCard(model, { height: height - 70 });
           // el pictograma necesita espacio para las 10 figuras
@@ -1636,8 +1668,7 @@
             el('span', { class: 'section-card__icon', 'aria-hidden': 'true' }, icon(s.icon, 20)),
             el('div', {}, el('h3', { class: 'card__title' }, p.title), el('div', { class: 'card__sub' }, [nCharts ? `${nCharts} gráfico${nCharts === 1 ? '' : 's'}` : null, p.tables.length ? `${p.tables.length} tabla${p.tables.length === 1 ? '' : 's'}` : null, p.kpis.length ? `${p.kpis.length} indicador${p.kpis.length === 1 ? '' : 'es'}` : null].filter(Boolean).join(' · '))),
             el('span', { class: 'section-card__go' }, 'Ver', icon('chev', 14))));
-          const first = p.items.find((x) => x.type === 'chart');
-          const model = first && chartModelFor(first, sheet, p.title);
+          const model = p.items.filter((x) => x.type === 'chart').map((x) => chartModelFor(x, sheet, p.title)).find((m) => m && !m.copyOf);
           if (p.kpis[0] && !model) card.append(el('div', { class: 'section-card__kpi' }, el('b', {}, p.kpis[0].text), el('span', {}, p.kpis[0].label)));
           if (model && genderInfo(model)) {
             card.append(el('div', { class: 'section-card__chart' }, genderBlock(model, true)));
@@ -1705,7 +1736,7 @@
         for (const { it, span, height } of layoutItems(charts)) {
           const model = withCenterTotal(excelChartModel(it, sec.sheet));
           if (!model) continue;
-          const card = chartCard(model, { height: height - 70 });
+          const card = model.copyOf ? copyCard(model) : chartCard(model, { height: height - 70 });
           card.style.gridColumn = `span ${span}`;
           grid.append(card);
         }
@@ -1963,6 +1994,7 @@
           if (it.chart && it.chart.title && it.chart.title.text) it.chart.title.text = Correcciones.fix(it.chart.title.text);
           if (it.chart) it.chart.axes.forEach((a) => a.title && (a.title = Correcciones.fix(a.title)));
         }
+    if (state.parts) for (const info of Object.values(state.parts.sheets)) markChartCopies(info.items);
     state.sheets = {};
     for (const n of wb.SheetNames) {
       const ws = wb.Sheets[n];
