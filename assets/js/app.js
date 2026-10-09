@@ -700,7 +700,7 @@
     g.items.forEach((x) => stats.append(el('div', { class: 'gender__stat' },
       el('span', { class: 'gender__badge', style: { background: x.color } }, icon(x.kind, compact ? 18 : 24)),
       el('div', {},
-        el('div', { class: 'gender__value' }, x.text, el('span', { class: 'gender__pct' }, ' · ' + (x.pct * 100).toFixed(1).replace('.', ',') + '%')),
+        el('div', { class: 'gender__value' }, x.text, el('span', { class: 'gender__pct' }, el('span', { class: 'gender__dot' }, ' · '), (x.pct * 100).toFixed(1).replace('.', ',') + '%')),
         el('div', { class: 'gender__label' }, x.label)))));
     wrap.append(stats);
     return wrap;

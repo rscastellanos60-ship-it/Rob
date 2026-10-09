@@ -617,12 +617,19 @@ code.inline { font-family: var(--mono); font-size: 12.5px; background: var(--sur
 .gender--compact .gender__badge { width: 32px; height: 32px; }
 .gender--compact .gender__value { font-size: 18px; }
 .gender--compact .gender__stat { padding: 8px; gap: 8px; }
-@media (max-width: 480px) { .gender__value { font-size: 19px; } .gender__badge { width: 36px; height: 36px; } }
+@media (max-width: 480px) {
+  .gender__value { font-size: 19px; } .gender__badge { width: 36px; height: 36px; }
+  /* el porcentaje va en su propia línea para no partir «412 ·» */
+  .gender__pct { display: block; } .gender__dot { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { .gender__fig { animation: none; } }
 .gender__picto { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 .gender__fig { width: 100%; justify-content: center; }
 .gender__fig svg { width: 72%; height: auto; max-width: 34px; display: block; }
 .gender-card .card__body { display: flex; flex-direction: column; justify-content: center; }
+/* la tarjeta llena la fila: figuras más grandes y espacio repartido, sin hueco arriba */
+.gender-card .gender:not(.gender--compact) { flex: 1; justify-content: space-evenly; }
+.gender-card .gender__fig svg { width: 86%; max-width: 46px; }
 .gender--compact .gender__fig svg { max-width: 20px; }
 .gender__stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .gender-card .card__title { overflow-wrap: anywhere; }
