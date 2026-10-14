@@ -2,5 +2,8 @@
   "organizacion": "Fedepalma",
   "titulo": "Tablero de indicadores",
   "archivo": null,
-  "seccionesTorta": ["Mapa Social"]
+  "seccionesTorta": [
+    "Mapa Social"
+  ],
+  "cifrado": "tablero.enc"
 }

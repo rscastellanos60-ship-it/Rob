@@ -2027,7 +2027,7 @@
   }
 
   async function handleFile(file) {
-    if (!file) return;
+    if (!file || state.locked) return;
     if (!/\.(xlsx|xlsm|xlsb|xls|xltx|xltm)$/i.test(file.name)) {
       toast('Formato no compatible: sube un archivo de Excel (.xlsx, .xlsm, .xls)');
       return;
@@ -2052,6 +2052,18 @@
       /* sin configuración */
     }
     applyConfig();
+    // Excel publicado cifrado: se descarga ahora y se descifra con la clave
+    if (state.config.cifrado) {
+      try {
+        const res = await fetch('data/' + encodeURIComponent(state.config.cifrado).replace(/%2F/g, '/'), { cache: 'no-store' });
+        if (res.ok) {
+          const lm = res.headers.get('last-modified');
+          return { encrypted: await res.arrayBuffer(), meta: { lastModified: lm ? Date.parse(lm) : null, source: 'repo' } };
+        }
+      } catch (e) {
+        /* sin archivo cifrado */
+      }
+    }
     if (!state.config.archivo) return null;
     try {
       const res = await fetch('data/' + encodeURIComponent(state.config.archivo).replace(/%2F/g, '/'), { cache: 'no-store' });
@@ -2107,6 +2119,14 @@
         }
       });
       setTimeout(() => window.print(), 300);
+    });
+    $('#btn-lock').addEventListener('click', () => {
+      try {
+        sessionStorage.removeItem('tablero:acceso');
+      } catch (e) {
+        /* nada que borrar */
+      }
+      location.reload();
     });
     const themeBtn = $('#btn-theme');
     const syncThemeIcon = () => {
@@ -2179,7 +2199,16 @@
     }
     bindUi();
     const [repo, local] = await Promise.all([fetchRepoFile(), store.get()]);
+    if (repo && repo.encrypted) {
+      // con clave: nada se muestra (ni el archivo publicado ni uno guardado) hasta escribirla
+      showLock(repo, local);
+      return;
+    }
     state.repoFile = repo;
+    await openFiles(repo, local);
+  }
+
+  async function openFiles(repo, local) {
     try {
       if (local && local.buffer) await loadBuffer(local.buffer, local);
       else if (repo) await loadBuffer(repo.buffer, repo.meta);
@@ -2194,6 +2223,63 @@
       $('#app').hidden = true;
       toast('No se pudo abrir el último archivo: ' + e.message);
     }
+  }
+
+  /* ---------- acceso con clave ---------- */
+  const PASS_KEY = 'tablero:acceso';
+  function showLock(repo, local) {
+    state.locked = true;
+    document.body.classList.add('is-locked');
+    $('#lock').hidden = false;
+    $('#empty').hidden = true;
+    $('#app').hidden = true;
+    $('#lock-title').textContent = state.config.titulo || 'Tablero protegido';
+    const form = $('#lock-form'), input = $('#lock-pass'), err = $('#lock-error'), btn = $('#lock-btn');
+    $('#lock-eye').onclick = () => {
+      input.type = input.type === 'password' ? 'text' : 'password';
+      input.focus();
+    };
+    const tryOpen = async (pass, silent) => {
+      err.hidden = true;
+      btn.disabled = true;
+      btn.textContent = 'Abriendo…';
+      try {
+        const { name, buffer } = await Cifrado.decrypt(repo.encrypted, pass);
+        try {
+          sessionStorage.setItem(PASS_KEY, pass);
+        } catch (e) {
+          /* sin almacenamiento de sesión */
+        }
+        state.locked = false;
+        document.body.classList.remove('is-locked');
+        $('#lock').hidden = true;
+        $('#btn-lock').hidden = false;
+        state.repoFile = { buffer, meta: { ...repo.meta, name, size: buffer.byteLength } };
+        await openFiles(state.repoFile, local);
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        if (silent) return;
+        err.textContent = e.wrongPassword ? 'Clave incorrecta. Inténtalo de nuevo.' : e.message;
+        err.hidden = false;
+        input.select();
+        form.classList.remove('shake');
+        void form.offsetWidth;
+        form.classList.add('shake');
+      }
+    };
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      if (input.value) tryOpen(input.value, false);
+    };
+    let saved = null;
+    try {
+      saved = sessionStorage.getItem(PASS_KEY);
+    } catch (e) {
+      saved = null;
+    }
+    if (saved) tryOpen(saved, true);
+    else setTimeout(() => input.focus(), 50);
   }
 
   // expuesto para pruebas y depuración

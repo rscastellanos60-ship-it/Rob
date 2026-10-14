@@ -637,3 +637,24 @@ code.inline { font-family: var(--mono); font-size: 12.5px; background: var(--sur
   .dash-grid .chart-wrap { min-height: 290px !important; }
   .dash-grid .chart-card > .card__body { flex: none; }
 }
+
+/* acceso con clave */
+.lock { min-height: calc(100vh - 64px); display: grid; place-items: center; padding: 24px 16px; background:
+  radial-gradient(700px 300px at 50% 0%, var(--brand-100), transparent 70%), var(--bg); }
+.lock__card { width: 100%; max-width: 400px; padding: 30px 28px 22px; text-align: center; }
+.lock__icon { width: 64px; height: 64px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 18px; color: #fff;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-800)); box-shadow: 0 10px 24px -12px rgba(14, 79, 45, 0.9); }
+.lock__card h1 { font-size: 21px; margin: 0 0 6px; }
+.lock__card > p { margin: 0 0 18px; color: var(--text-2); }
+.lock__field { position: relative; }
+.lock__field input { width: 100%; height: 46px; padding: 0 46px 0 14px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); font-size: 16px; }
+.lock__field input:focus { outline: 2px solid var(--brand-300); border-color: var(--brand-500); }
+.lock__eye { position: absolute; right: 6px; top: 6px; width: 34px; height: 34px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.lock__eye:hover { color: var(--text); background: var(--surface-3); }
+.lock__btn { width: 100%; height: 44px; margin-top: 12px; font-size: 15px; }
+.lock__btn:disabled { opacity: 0.7; cursor: progress; }
+.lock__error { margin-top: 12px; padding: 8px 10px; border-radius: 10px; background: #fdecea; color: #8a2412; font-size: 13.5px; font-weight: 600; }
+.lock__note { margin: 16px 0 0; font-size: 12px; color: var(--muted); }
+.shake { animation: shake 0.35s ease; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+body.is-locked .header-actions, body.is-locked .file-chip { display: none !important; }
