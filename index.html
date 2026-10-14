@@ -38,11 +38,35 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v4H7zM5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2zm4 7v3h6v-3H9z"/></svg>
         </button>
         <button class="icon-btn" id="btn-theme" type="button"></button>
+        <button class="icon-btn" id="btn-lock" type="button" title="Bloquear el tablero" aria-label="Bloquear el tablero" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3zm0 9.5a1.75 1.75 0 0 0-1 3.19V19h2v-2.31a1.75 1.75 0 0 0-1-3.19z"/></svg>
+        </button>
       </div>
     </div>
   </header>
 
   <input type="file" id="file-input" accept=".xlsx,.xlsm,.xlsb,.xls,.xltx,.xltm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel" hidden>
+
+  <!-- Acceso con clave -->
+  <section id="lock" class="lock" hidden>
+    <form class="card lock__card" id="lock-form" autocomplete="off">
+      <div class="lock__icon" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3zm0 9.5a1.75 1.75 0 0 0-1 3.19V19h2v-2.31a1.75 1.75 0 0 0-1-3.19z"/></svg>
+      </div>
+      <h1 id="lock-title">Tablero protegido</h1>
+      <p>Escribe la clave para ver la información.</p>
+      <label class="sr-only" for="lock-pass">Clave</label>
+      <div class="lock__field">
+        <input id="lock-pass" type="password" placeholder="Clave" autocomplete="current-password" required>
+        <button type="button" class="lock__eye" id="lock-eye" aria-label="Mostrar la clave" title="Mostrar la clave">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5c5 0 8.7 3.6 10 7-1.3 3.4-5 7-10 7S3.3 15.4 2 12c1.3-3.4 5-7 10-7zm0 2.5A4.5 4.5 0 1 0 16.5 12 4.5 4.5 0 0 0 12 7.5zm0 2A2.5 2.5 0 1 1 9.5 12 2.5 2.5 0 0 1 12 9.5z"/></svg>
+        </button>
+      </div>
+      <button class="btn btn--primary lock__btn" type="submit" id="lock-btn">Entrar</button>
+      <div class="lock__error" id="lock-error" role="alert" hidden></div>
+      <p class="lock__note">La información se descifra en tu navegador; la clave no se envía a ningún servidor.</p>
+    </form>
+  </section>
 
   <!-- Estado inicial: sin archivo -->
   <section id="empty" class="empty" hidden>
@@ -79,6 +103,7 @@
   <script src="assets/vendor/xlsx.full.min.js"></script>
   <script src="assets/vendor/jszip.min.js"></script>
   <script src="assets/vendor/chart.umd.min.js"></script>
+  <script src="assets/js/cifrado.js"></script>
   <script src="assets/js/correcciones.js"></script>
   <script src="assets/js/emf.js"></script>
   <script src="assets/js/ooxml.js"></script>

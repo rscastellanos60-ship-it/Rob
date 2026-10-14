@@ -26,23 +26,25 @@ La página corrige al mostrar los errores de los textos del Excel (por ejemplo �
 "correcciones": { "texto como está en Excel": "texto corregido" }
 ```
 
-## Privacidad
+## Acceso con clave y privacidad
 
-El archivo se lee **solo en el navegador** de quien lo sube; no se envía a ningún servidor.
-Este repositorio es **público**: no copies el Excel a `data/` si contiene datos personales
-(por ejemplo, *BD Maestra* o *BD HC*). En ese caso usa solo el botón **Subir Excel**,
-o publica la página en un repositorio/sitio privado.
+El Excel publicado está en `data/tablero.enc`, **cifrado** (AES-GCM de 256 bits, llave derivada de la clave
+con PBKDF2-SHA256). Al abrir la página se pide la clave; el archivo se descifra solo en el navegador y la clave
+no se envía a ningún servidor ni está guardada en el repositorio. Sin la clave, el archivo descargado no se
+puede leer. La clave queda recordada solo mientras la pestaña esté abierta; el botón del candado vuelve a bloquear.
+
+- Nunca subas el Excel sin cifrar a `data/`: este repositorio es **público** y contiene datos personales.
+- Si la clave se comparte con alguien que no debería verla, cámbiala cifrando de nuevo el archivo
+  (ten en cuenta que las versiones anteriores de `tablero.enc` siguen en el historial del repositorio).
 
 ## Cómo actualizar
 
-1. Actualiza el Excel como siempre (ejecuta las macros y **guárdalo en Excel**, así los gráficos quedan con los valores al día).
-2. Elige una opción:
-   - **Solo en tu navegador:** botón **Subir Excel** o arrastra el archivo sobre la página. Queda guardado en ese navegador.
-   - **Para todos:** copia el archivo a `data/` y pon su nombre en `data/config.json`:
-     ```json
-     { "organizacion": "Fedepalma", "titulo": "Tablero de indicadores", "archivo": "Dashboard.xlsm" }
-     ```
-     Para actualizar, reemplaza el archivo en `data/` con el mismo nombre.
+1. Actualiza el Excel como siempre y **guárdalo en Excel** (así los gráficos quedan con los valores al día).
+2. Abre `cifrar.html` en la página publicada (por ejemplo `…/Rob/cifrar.html`), elige el Excel, escribe la clave
+   dos veces y descarga `tablero.enc`. Con una clave distinta, esa será la nueva clave del tablero.
+3. En GitHub reemplaza `data/tablero.enc` (*Add file → Upload files*). En uno o dos minutos se ve publicado.
+
+Para revisar otro archivo solo en tu navegador, entra con la clave y usa **Subir Excel**.
 
 ## Ver la página
 
@@ -56,11 +58,14 @@ o publica la página en un repositorio/sitio privado.
 index.html
 assets/css/styles.css     estilos y paleta verde (modo claro y oscuro)
 assets/js/ooxml.js        lee gráficos, cuadros de texto, imágenes y botones del .xlsx/.xlsm
+assets/js/cifrado.js      cifra y descifra el Excel publicado con la clave
 assets/js/correcciones.js ortografía y meses en español de los textos del Excel
 assets/js/emf.js          dibuja las imágenes EMF (tablas copiadas como imagen) como SVG
 assets/js/analysis.js     detecta tablas e indicadores y resuelve los rangos de los gráficos
 assets/js/vba.js          extrae y analiza las macros (vbaProject.bin)
 assets/js/app.js          interfaz, secciones y gráficos (Chart.js)
 assets/vendor/            SheetJS 0.18.5, JSZip 3.10.1, Chart.js 4.4.1
-data/config.json          nombre del archivo publicado y títulos
+data/config.json          títulos, archivo cifrado y secciones en torta
+data/tablero.enc          Excel publicado, cifrado
+cifrar.html               genera tablero.enc a partir de un Excel nuevo
 ```
