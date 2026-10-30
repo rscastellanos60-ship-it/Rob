@@ -52,6 +52,19 @@ Para revisar otro archivo solo en tu navegador, entra con la clave y usa **Subir
 - **En el equipo:** `python3 -m http.server` en esta carpeta y abre <http://localhost:8000>.
   (Abriendo `index.html` con doble clic también funciona para subir archivos; solo la carga automática desde `data/` necesita un servidor.)
 
+## Encuesta de Semillas 2026
+
+`encuesta-semillas.html` es la encuesta a núcleos vendedores de semillas de palma de aceite, con los colores
+de Fedepalma (verde oliva `#516228` y ocre `#d8921e`). Tiene cuatro pasos: datos de la empresa, producción e
+inventario, ventas y revisión. Se pueden agregar todos los materiales y ventas que se necesiten; cada material
+muestra solo los campos de su categoría y los números se validan (enteros, rangos, porcentaje de 0 a 100).
+
+- El avance se guarda en el navegador de quien diligencia, así puede cerrar y volver.
+- Al final se descarga un Excel con tres hojas (*Empresa*, *Inventario y uso*, *Ventas*), una fila por
+  registro y el NIT en todas, listo para consolidar con Power Query.
+- La página no tiene servidor: el encuestado envía el Excel por correo. Para mostrar el botón «Abrir correo»
+  escribe la dirección en `CONFIG.correo` dentro del script de la página.
+
 ## Estructura
 
 ```
@@ -68,4 +81,5 @@ assets/vendor/            SheetJS 0.18.5, JSZip 3.10.1, Chart.js 4.4.1
 data/config.json          títulos, archivo cifrado y secciones en torta
 data/tablero.enc          Excel publicado, cifrado
 cifrar.html               genera tablero.enc a partir de un Excel nuevo
+encuesta-semillas.html    encuesta de semillas 2026 (descarga las respuestas en Excel)
 ```
