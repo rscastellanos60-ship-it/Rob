@@ -52,6 +52,34 @@ Para revisar otro archivo solo en tu navegador, entra con la clave y usa **Subir
 - **En el equipo:** `python3 -m http.server` en esta carpeta y abre <http://localhost:8000>.
   (Abriendo `index.html` con doble clic también funciona para subir archivos; solo la carga automática desde `data/` necesita un servidor.)
 
+## Encuesta de Semillas 2026
+
+`encuesta-semillas.html` es la encuesta a núcleos vendedores de semillas de palma de aceite, con los colores
+de Fedepalma (verde oliva `#516228` y ocre `#d8921e`). Tiene cuatro pasos: datos de la empresa, producción e
+inventario, ventas y revisión. Se pueden agregar todos los materiales y ventas que se necesiten; cada material
+muestra solo los campos de su categoría y los números se validan (enteros, rangos, porcentaje de 0 a 100).
+El avance se guarda en el navegador de quien diligencia, así puede cerrar y volver.
+
+Al enviar, las respuestas se guardan en una base de datos **Cloudflare D1** mediante la función
+`functions/api/respuestas.js`, que vuelve a validar todo; la empresa recibe un número de radicado.
+En `admin-semillas.html` (con clave) se ven los envíos y se descarga un Excel con tres hojas
+(*Empresas*, *Inventario y uso*, *Ventas*). Si una empresa envía otra vez, se toma su envío más reciente.
+
+### Publicar en Cloudflare Pages (plan gratuito)
+
+1. **Base de datos:** en el panel de Cloudflare, *Storage & Databases → D1 → Create*, nombre
+   `encuesta-semillas`. Abre su *Console*, pega el contenido de `db/schema.sql` y ejecútalo.
+2. **Sitio:** *Workers & Pages → Create → Pages → Connect to Git*, elige este repositorio y la rama `main`.
+   Sin framework, sin comando de compilación y con `/` como carpeta de salida.
+3. **Conectar la base de datos:** en el proyecto, *Settings → Bindings → Add → D1 database*:
+   nombre de variable `DB`, base `encuesta-semillas`.
+4. **Clave de administración:** *Settings → Variables and Secrets → Add*, tipo *Secret*, nombre `ADMIN_KEY`
+   y una clave larga (mínimo 12 caracteres). No la escribas en el repositorio.
+5. Vuelve a desplegar (*Deployments → Retry deployment*) para que tome los pasos 3 y 4.
+
+Quedan en `https://<proyecto>.pages.dev/encuesta-semillas` (para las empresas) y
+`https://<proyecto>.pages.dev/admin-semillas` (para descargar las respuestas).
+
 ## Estructura
 
 ```
@@ -68,4 +96,8 @@ assets/vendor/            SheetJS 0.18.5, JSZip 3.10.1, Chart.js 4.4.1
 data/config.json          títulos, archivo cifrado y secciones en torta
 data/tablero.enc          Excel publicado, cifrado
 cifrar.html               genera tablero.enc a partir de un Excel nuevo
+encuesta-semillas.html    encuesta de semillas 2026 (envía las respuestas a Cloudflare D1)
+admin-semillas.html       ver y descargar en Excel las respuestas de la encuesta (con clave)
+functions/api/            funciones de Cloudflare Pages: guardar respuestas y exportarlas
+db/schema.sql             tablas de la base de datos D1
 ```
