@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Respuestas Encuesta de Semillas</title>
+  <meta name="theme-color" content="#516228">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --olive: #516228; --olive-dark: #3b4a1c; --olive-mid: #9aa259; --olive-soft: #eef1e3; --ochre: #d8921e;
+      --bg: #f7f6f0; --text: #2b2f22; --muted: #5f6650; --line: #dcdfcf; --error: #b3261e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; }
+    [hidden] { display: none !important; }
+    header { background: var(--olive); color: #fff; border-bottom: 6px solid var(--ochre); }
+    header div { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+    header small { color: #e3e8cc; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; font-size: 12px; }
+    header h1 { margin: 2px 0 0; font-size: 22px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+    .panel { background: #fff; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05); padding: 20px; margin-bottom: 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    input[type=password] { font: inherit; border: 1px solid #c9cdb8; border-radius: 8px; padding: 9px 11px; min-height: 42px; flex: 1 1 240px; }
+    .btn { font: inherit; font-weight: 600; border-radius: 8px; padding: 10px 18px; min-height: 42px; cursor: pointer; border: 1px solid transparent; }
+    .btn--primary { background: var(--olive); color: #fff; }
+    .btn--accent { background: var(--ochre); color: #2b2008; }
+    .btn--ghost { background: #fff; border-color: #c9cdb8; color: var(--olive-dark); }
+    .error { color: var(--error); margin: 10px 0 0; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .stat { background: var(--olive-soft); border-radius: 10px; padding: 12px 14px; }
+    .stat b { display: block; font-size: 22px; color: var(--olive-dark); }
+    .stat span { font-size: 12.5px; color: var(--muted); }
+    .check { display: inline-flex; gap: 8px; align-items: center; }
+    .check input { accent-color: var(--olive); width: 18px; height: 18px; }
+    .wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { color: var(--muted); font-weight: 600; }
+    tr.old td { color: #9aa08a; }
+  </style>
+</head>
+<body>
+  <header><div><small>SISPA · Uso interno</small><h1>Respuestas · Encuesta de Semillas 2026</h1></div></header>
+  <main>
+    <div class="panel" id="login">
+      <form class="row" id="login-form">
+        <input type="password" id="clave" placeholder="Clave de administración" autocomplete="current-password" required>
+        <button class="btn btn--primary" type="submit">Ver respuestas</button>
+      </form>
+      <p class="error" id="login-error" hidden></p>
+    </div>
+
+    <div id="datos" hidden>
+      <div class="stats" id="stats"></div>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <label class="check"><input type="checkbox" id="solo-ultimo" checked> Solo el envío más reciente de cada NIT</label>
+          <div class="row">
+            <button class="btn btn--ghost" id="actualizar" type="button">Actualizar</button>
+            <button class="btn btn--accent" id="excel" type="button">Descargar Excel</button>
+            <button class="btn btn--ghost" id="salir" type="button">Salir</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 style="margin:0 0 10px;font-size:17px;color:var(--olive-dark)">Envíos recibidos</h2>
+        <div class="wrap"><table><thead><tr><th>Recibido (hora Colombia)</th><th>Radicado</th><th>NIT</th><th>Empresa</th><th>Actividad</th><th>Materiales</th><th>Ventas</th><th>Diligenció</th></tr></thead><tbody id="tabla"></tbody></table></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/vendor/xlsx.full.min.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var KEY = 'admin-semillas-clave';
+    var $ = function (s) { return document.querySelector(s); };
+    var data = null;
+
+    function getClave() { try { return sessionStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+    function setClave(v) { try { if (v) sessionStorage.setItem(KEY, v); else sessionStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function hora(utc) { return utc ? new Date(utc.replace(' ', 'T') + 'Z').toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : ''; }
+    var fmt = new Intl.NumberFormat('es-CO');
+
+    function cargar(clave) {
+      $('#login-error').hidden = true;
+      return fetch('api/exportar', { headers: { authorization: 'Bearer ' + clave } })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta inesperada (' + r.status + ').' }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.error || 'No se pudo cargar.');
+          setClave(clave);
+          data = res;
+          $('#login').hidden = true;
+          $('#datos').hidden = false;
+          render();
+        })
+        .catch(function (err) {
+          setClave('');
+          $('#login').hidden = false;
+          $('#datos').hidden = true;
+          $('#login-error').textContent = err.message;
+          $('#login-error').hidden = false;
+        });
+    }
+
+    // The newest envío per NIT supersedes earlier ones (a company re-sends to correct data).
+    function vigentes() {
+      var ultimo = {};
+      data.envios.forEach(function (e) { ultimo[e.nit] = e.id; });
+      return ultimo;
+    }
+    function filtrados() {
+      if (!$('#solo-ultimo').checked) return data;
+      var ult = vigentes();
+      var ok = function (x) { return ult[x.nit] === (x.envio_id || x.id); };
+      return { envios: data.envios.filter(ok), materiales: data.materiales.filter(ok), ventas: data.ventas.filter(ok) };
+    }
+
+    function render() {
+      var d = filtrados();
+      var ult = vigentes();
+      var empresas = Object.keys(ult).length;
+      var cuenta = function (list, id) { return list.filter(function (x) { return x.envio_id === id; }).length; };
+      var sum = function (list) { return list.reduce(function (a, x) { return a + (x.cantidad || 0); }, 0); };
+      $('#stats').innerHTML = [
+        [empresas, 'Empresas (NIT distintos)'],
+        [data.envios.length, 'Envíos recibidos en total'],
+        [d.envios.filter(function (e) { return e.actividad === 'No'; }).length, 'Empresas sin actividad'],
+        [d.materiales.length, 'Registros de materiales'],
+        [d.ventas.length, 'Ventas registradas'],
+        [fmt.format(sum(d.ventas)), 'Semillas vendidas'],
+      ].map(function (s) { return '<div class="stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>'; }).join('');
+      $('#tabla').innerHTML = data.envios.slice().reverse().map(function (e) {
+        return '<tr class="' + (ult[e.nit] === e.id ? '' : 'old') + '"><td>' + esc(hora(e.recibido)) + '</td><td>' + esc(e.id) + '</td><td>' + esc(e.nit) +
+          '</td><td>' + esc(e.empresa) + '</td><td>' + esc(e.actividad) + '</td><td>' + cuenta(data.materiales, e.id) +
+          '</td><td>' + cuenta(data.ventas, e.id) + '</td><td>' + esc(e.dil) + '</td></tr>';
+      }).join('') || '<tr><td colspan="8">Aún no hay respuestas.</td></tr>';
+    }
+
+    function excel() {
+      var d = filtrados();
+      var ult = vigentes();
+      var mapE = function (e) {
+        return { 'Radicado': e.id, 'Recibido (hora Colombia)': hora(e.recibido), 'Envío vigente': ult[e.nit] === e.id ? 'Sí' : 'No',
+          'NIT': e.nit, 'Empresa': e.empresa, 'Representante legal': e.rep, 'Identificación representante': e.rep_id,
+          'Teléfono': e.tel, 'Celular': e.cel, 'Fax': e.fax, 'Dirección': e.direccion, 'Ciudad': e.ciudad,
+          'Diligenciado por': e.dil, 'Cargo': e.cargo, 'Correo': e.correo, 'Fecha declarada': e.fecha,
+          'Reporta actividad': e.actividad, 'Observaciones': e.obs, 'Declaración': e.declaracion ? 'Acepto' : '' };
+      };
+      var mapM = function (m) {
+        return { 'Radicado': m.envio_id, 'NIT': m.nit, 'Empresa': m.empresa, 'N°': m.n, 'Categoría': m.categoria, 'Material': m.material,
+          'Cantidad bruta': m.cantidad, 'Densidad sugerida (palmas/ha)': m.densidad, 'Descarte sugerido (%)': m.descarte, 'Año': m.anio,
+          'Edad (meses)': m.edad, 'Municipio de siembra': m.municipio, 'Hectáreas sembradas': m.hectareas, 'Observaciones': m.obs };
+      };
+      var mapV = function (v) {
+        return { 'Radicado': v.envio_id, 'NIT vendedor': v.nit, 'Empresa vendedora': v.empresa, 'N°': v.n, 'Año': v.anio,
+          'Comprador': v.comprador, 'Identificación comprador': v.comprador_id, 'Teléfono comprador': v.telefono, 'Material': v.material,
+          'Cantidad bruta': v.cantidad, 'Departamento destino': v.departamento, 'Municipio destino': v.municipio,
+          'Tipo de comprador': v.tipo, 'Observaciones': v.obs };
+      };
+      var wb = XLSX.utils.book_new();
+      // Headers come from mapping an empty record, so sheets without rows still have their columns.
+      [[d.envios, mapE, 'Empresas'], [d.materiales, mapM, 'Inventario y uso'], [d.ventas, mapV, 'Ventas']].forEach(function (s) {
+        var header = Object.keys(s[1]({}));
+        var ws = XLSX.utils.json_to_sheet(s[0].map(s[1]), { header: header });
+        ws['!cols'] = header.map(function (h) { return { wch: Math.max(12, Math.min(40, h.length + 4)) }; });
+        XLSX.utils.book_append_sheet(wb, ws, s[2]);
+      });
+      XLSX.writeFile(wb, 'Encuesta_Semillas_2026_respuestas_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    }
+
+    $('#login-form').addEventListener('submit', function (ev) { ev.preventDefault(); cargar($('#clave').value); });
+    $('#actualizar').addEventListener('click', function () { cargar(getClave()); });
+    $('#excel').addEventListener('click', excel);
+    $('#solo-ultimo').addEventListener('change', render);
+    $('#salir').addEventListener('click', function () { setClave(''); location.reload(); });
+    if (getClave()) cargar(getClave());
+  })();
+  </script>
+</body>
+</html>

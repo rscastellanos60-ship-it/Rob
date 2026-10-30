@@ -136,6 +136,9 @@
     table.summary th, table.summary td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
     table.summary th { color: var(--muted); font-weight: 600; width: 40%; }
     .table-wrap { overflow-x: auto; }
+    .trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+    .notice ul { margin: 6px 0 0; padding-left: 20px; }
+    .btn:disabled { opacity: .6; cursor: wait; }
     footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 0 16px 32px; }
   </style>
 </head>
@@ -249,17 +252,27 @@
           </div>
 
           <h3>Enviar</h3>
-          <ol class="lead" id="instrucciones-envio" style="padding-left:20px;margin-bottom:12px">
-            <li>Descargue el archivo Excel con sus respuestas.</li>
-            <li>Envíelo como adjunto al correo indicado en la invitación<span id="correo-texto"></span>.</li>
-          </ol>
+          <p class="lead">Al enviar, sus respuestas quedan registradas en la encuesta y recibirá un número de radicado.</p>
+          <div class="trap" aria-hidden="true"><label>No llene este campo <input type="text" name="sitio_web" tabindex="-1" autocomplete="off"></label></div>
           <div class="nav" style="justify-content:flex-start">
-            <button type="button" class="btn btn--primary" id="descargar">Descargar Excel con mis respuestas</button>
-            <a class="btn btn--ghost" id="correo" hidden>Abrir correo</a>
+            <button type="button" class="btn btn--primary" id="enviar">Enviar respuestas</button>
           </div>
-          <p class="notice notice--ok" id="descargado" hidden style="margin-top:14px">Archivo generado. Recuerde adjuntarlo al correo: el archivo no se envía solo.</p>
+          <div class="notice" id="envio-error" role="alert" hidden style="margin-top:14px"></div>
         </div>
         <div class="nav"><button type="button" class="btn btn--ghost" data-prev>Atrás</button><span class="spacer"></span><button type="button" class="btn btn--link" id="limpiar">Borrar todo y empezar de nuevo</button></div>
+      </section>
+
+      <!-- Confirmación -->
+      <section class="step" data-step="4" hidden>
+        <div class="panel">
+          <h2>¡Gracias! Sus respuestas fueron recibidas</h2>
+          <p class="notice notice--ok">Número de radicado: <b id="radicado"></b>. Guárdelo como constancia del envío.</p>
+          <p class="lead">Si necesita corregir algo, diligencie la encuesta de nuevo con el mismo NIT: se tomará el envío más reciente.</p>
+          <div class="nav" style="justify-content:flex-start">
+            <button type="button" class="btn btn--ghost" id="copia">Descargar copia de mis respuestas (Excel)</button>
+            <button type="button" class="btn btn--accent" id="nueva">Diligenciar otra encuesta</button>
+          </div>
+        </div>
       </section>
     </form>
   </main>
@@ -316,8 +329,8 @@
   (function () {
     'use strict';
 
-    // Ajustes de la operación. Escriba el correo de recepción para mostrar el botón "Abrir correo".
-    var CONFIG = { anio: 2026, correo: '' };
+    // Ajustes de la operación. Las respuestas se envían a la función de Cloudflare en functions/api/respuestas.js.
+    var CONFIG = { anio: 2026, api: 'api/respuestas' };
 
     var CATS = [
       { id: 'prod', label: 'Semilla producida en ' + CONFIG.anio, anio: 'Año de producción' },
@@ -635,7 +648,15 @@
       sheet(ventas, headers.ventas, 'Ventas');
       return wb;
     }
-    $('#descargar').addEventListener('click', function () {
+    // ---------- Envío ----------
+    var enviado = null;
+    function showError(msg, detalles) {
+      var box = $('#envio-error');
+      box.innerHTML = esc(msg) + (detalles && detalles.length ? '<ul>' + detalles.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '');
+      box.hidden = false;
+      box.scrollIntoView({ block: 'center' });
+    }
+    $('#enviar').addEventListener('click', function () {
       var steps = sinActividad() ? [0, 3] : [0, 1, 2, 3];
       for (var i = 0; i < steps.length; i++) {
         if (!validateStep(steps[i])) {
@@ -644,24 +665,30 @@
         }
       }
       var d = collect();
-      var nit = (d.empresa.emp_nit || 'empresa').replace(/[^0-9A-Za-z-]/g, '');
-      var nombre = 'Semillas' + CONFIG.anio + '_' + nit + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
-      XLSX.writeFile(buildWorkbook(d), nombre);
-      $('#descargado').hidden = false;
-      save();
+      var payload = Object.assign({ anio: CONFIG.anio, sitio_web: form.elements.sitio_web.value }, d);
+      var btn = $('#enviar');
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+      $('#envio-error').hidden = true;
+      fetch(CONFIG.api, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Respuesta inesperada del servidor (' + r.status + ').' }; }); })
+        .then(function (res) {
+          if (!res.ok) { showError(res.error || 'No se pudo enviar.', res.detalles); return; }
+          enviado = d;
+          $('#radicado').textContent = res.radicado;
+          try { localStorage.removeItem(STORE_KEY); } catch (e) { /* sin almacenamiento */ }
+          $('#steps').hidden = true;
+          show(4);
+        })
+        .catch(function () { showError('No hay conexión con el servidor. Sus respuestas siguen guardadas en este navegador; intente de nuevo en unos minutos.'); })
+        .then(function () { btn.disabled = false; btn.textContent = 'Enviar respuestas'; });
     });
-
-    if (CONFIG.correo) {
-      $('#correo-texto').textContent = ' (' + CONFIG.correo + ')';
-      var a = $('#correo');
-      a.hidden = false;
-      a.addEventListener('click', function () {
-        var d = collect();
-        var asunto = 'Encuesta de Semillas ' + CONFIG.anio + ' - ' + d.empresa.emp_nombre + ' - NIT ' + d.empresa.emp_nit;
-        a.href = 'mailto:' + CONFIG.correo + '?subject=' + encodeURIComponent(asunto) +
-          '&body=' + encodeURIComponent('Adjunto el archivo de la Encuesta de Semillas ' + CONFIG.anio + '.\n\n' + d.empresa.emp_dil + '\n' + d.empresa.emp_cargo);
-      });
-    }
+    $('#copia').addEventListener('click', function () {
+      if (!enviado) return;
+      var nit = (enviado.empresa.emp_nit || 'empresa').replace(/[^0-9A-Za-z-]/g, '');
+      XLSX.writeFile(buildWorkbook(enviado), 'Semillas' + CONFIG.anio + '_' + nit + '_' + $('#radicado').textContent + '.xlsx');
+    });
+    $('#nueva').addEventListener('click', function () { location.reload(); });
 
     $('#limpiar').addEventListener('click', function () {
       if (!confirm('Se borrarán todas las respuestas de este navegador. ¿Continuar?')) return;
